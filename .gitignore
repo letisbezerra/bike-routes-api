@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Env
+.env
+.env.local
+
+# AI working docs (private, not part of the public repo)
+CLAUDE.md
+docs/CONTEXT.md
+docs/PLAN.md
+docs/specs/
