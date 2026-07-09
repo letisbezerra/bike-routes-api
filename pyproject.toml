@@ -3,13 +3,24 @@ name = "bike-routes-api"
 version = "0.1.0"
 description = "Free, secure REST API over Fortaleza's open bike infrastructure data."
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.139.0",
+    "psycopg[binary]>=3.3.4",
+    "pydantic-settings>=2.14.2",
+    "slowapi>=0.1.10",
+    "sqlalchemy>=2.0.51",
+    "uvicorn>=0.51.0",
+]
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.5.0",
     "pytest>=8.0",
     "ruff>=0.8",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
