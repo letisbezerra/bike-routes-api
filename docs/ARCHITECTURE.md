@@ -89,6 +89,7 @@ Adapted for this project (no user accounts):
 - Auth = API key for rate limiting, not JWT/OAuth2 user identity
 - No ownership-based authorization (no resource has an "owner")
 - Observability starts as structured logs; add Prometheus/Grafana only if scale demands it
+- **Monitoring, day-1, not deferred**: UptimeRobot (free) pings `GET /health` to catch full outages — closes the loop on the known free-tier-hosting spin-down risk, not a hypothetical. Sentry (free tier) catches unhandled exceptions within a running request — different failure mode (app alive but a request breaks), second priority.
 
 Doesn't apply for MVP:
 - Idempotency concerns (GET-only, inherently idempotent)
