@@ -4,9 +4,14 @@ version = "0.1.0"
 description = "Free, secure REST API over Fortaleza's open bike infrastructure data."
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.14.0",
+    "beautifulsoup4>=4.12.3",
     "fastapi>=0.139.0",
+    "geoalchemy2>=0.16.0",
     "psycopg[binary]>=3.3.4",
     "pydantic-settings>=2.14.2",
+    "pyproj>=3.7.0",
+    "shapely>=2.0.6",
     "slowapi>=0.1.10",
     "sqlalchemy>=2.0.51",
     "uvicorn>=0.51.0",
@@ -25,6 +30,7 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

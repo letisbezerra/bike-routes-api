@@ -40,6 +40,9 @@ jobs:
       - name: Set up environment
         run: cp .env.example .env
 
+      - name: Run migrations
+        run: uv run alembic upgrade head
+
       - name: Lint
         run: uv run ruff check .
 
