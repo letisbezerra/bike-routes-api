@@ -29,16 +29,16 @@ One table per feature type (mixed geometries across source layers rule out one g
 
 | Table | Geometry | Key fields |
 |---|---|---|
-| `bike_routes` | LineString | name, category (enum), length_km, segment, road_position, direction, pavement, separation_element, implemented_at, neighborhoods, reference_year, source_id |
-| `bike_parking` | Point | name, spot_count, type (enum), operating_hours |
+| `bike_routes` | LineString | name, category (enum), length_km, segment, road_position, direction, pavement, separation_element, implemented_at, neighborhoods (array), reference_year, source_id |
+| `bike_parking` | Point | name, spot_count, type (enum), operating_hours, source_id |
 | `bike_share_stations` | Point | name, neighborhood, regional, inaugurated_at, status (enum, normalized), sponsor, current_slots, station_type, source_id |
-| `rest_points` | Point | name, image_url (extracted from source HTML, sanitized) |
-| `leisure_routes` | MultiLineString | name, support_count |
+| `rest_points` | Point | name, image_urls (array, extracted from source HTML, sanitized), source_id |
+| `leisure_routes` | MultiLineString | name, support_count, source_id |
 
-- **ID**: generated at ingestion (own primary key), never trusts source `Id`/`ID` (has gaps). Original kept as `source_id` for traceability — and used as the upsert key so ids stay stable across re-ingestion, since this API is meant to be built on top of (external references to an id shouldn't silently break on a data refresh).
+- **ID**: generated at ingestion (own primary key), never trusts source `Id`/`ID` (has gaps). Original kept as `source_id` for traceability and used as the upsert key. 2 of 5 source files have a native `Id`/`ID` (`bike_routes`, `bike_share_stations`, and even then with gaps); the other 3 (`bike_parking`, `rest_points`, `leisure_routes`) have none. Where no native id exists — or it's blank — `source_id` is generated deterministically from `sha256(name + geometry WKT)`, so ids stay stable across re-ingestion as long as the underlying feature's name/geometry don't change at the source (a real edit is then correctly treated as a new record). Re-ingestion also deletes any `source_id` no longer present in the current batch, so removed features don't linger.
 - **Raw data**: not duplicated in its own table — CKAN is the source of truth/history; re-ingest instead of storing an audit copy.
 - **Enum vs free text**: fields used as API filters (`category`, `type`, `status`) are constrained enums; descriptive fields (`name`, `segment`) stay free text.
-- **Indexes**: GiST on every geometry column; b-tree on `category`/`neighborhood` (likely filter candidates).
+- **Indexes**: GiST on every geometry column; b-tree on scalar filter fields (`category`, `bike_share_stations.neighborhood`, `type`, `status`); GIN on `bike_routes.neighborhoods` (array column — `= ANY()` queries need GIN, not b-tree).
 - **Layering**: routers → services → repositories (pragmatic separation, not full Clean Architecture — no business-logic complexity here to justify entity/use-case/port abstraction layers).
 - **Paradigm**: pragmatic OOP, not heavy OOP. Classes where state is encapsulated (ORM models, Pydantic schemas, `service`/`repository` holding an injected DB session) — no inheritance chains or abstract base classes without a concrete need. Route handlers stay plain functions (`@router.get(...)`), FastAPI's idiomatic style, not class-based views.
 
@@ -59,14 +59,20 @@ tests/             # mirrors app/ by domain — tests/routes/, tests/parking/, .
 data/
 └── raw/           # source GeoJSON snapshots (committed — keeps the project runnable without hitting CKAN first)
 scripts/
-└── ingest.py      # created when we build the ingestion pipeline
+└── ingest.py      # reads data/raw/*.geojson, cleans, upserts into PostGIS
+alembic/
+├── env.py         # GeoAlchemy2-aware migration environment
+└── versions/      # one migration per schema change
+alembic.ini
 .github/
 └── workflows/
     └── ci.yml     # pytest on push/PR
 docker-compose.yml # local PostGIS, test-only
 pyproject.toml
 .env.example
-LICENSE            # MIT — code license, distinct from the data attribution requirement (docs/CONTEXT.md §3)
+LICENSE            # AGPL-3.0 — code license, distinct from the data attribution requirement (docs/CONTEXT.md §3)
+CONTRIBUTING.md    # CLA requirement for external contributions — skeleton, pending legal review
+COMMERCIAL-LICENSE.md # dual-licensing note — skeleton, pending legal review
 ```
 
 ## API design standards
@@ -122,6 +128,18 @@ For the operator (me):
 - Encryption at rest and TLS on the DB connection: provided by Supabase/Neon by default, not something we implement
 - Dependency vulnerability scanning (`pip-audit`/Dependabot) + pinned/locked versions, not just scanning on the fly
 - Logs aimed at detecting abuse/attack, not just performance
+
+## Licensing
+
+**Code: AGPL-3.0**, replacing an earlier MIT decision (`docs/CONTEXT.md` §3). The trigger was a goal change: MIT was chosen for portfolio visibility, with no thought given to someone forking the project, modifying it, and reselling it — as a downloadable product or as a competing hosted service — without giving anything back. No OSI-approved open-source license can legally forbid that (Open Source Definition §6 bars discriminating against fields of use, including commercial resale) — this is a hard boundary, not a gap in research. What AGPL-3.0 actually buys, compared to MIT or a plain GPL: anyone who runs a *modified* version of this code as a network service (SaaS) is obligated to publish that modified source to their users — GPL's copyleft normally only triggers on distributing a binary, which a hosted service never does; AGPL closes exactly that gap. It does not stop a well-resourced company from complying and still outcompeting on hosting/support/brand, and it does not entitle this project to any share of resulting revenue.
+
+**Trademark is a separate, complementary lever**, not yet acted on: the license controls the *code*, not the project's *name* — a compliant fork could still legally reuse the AGPL source while calling itself something else, but not while claiming to *be* this project. Revisit if the project name/brand becomes worth defending.
+
+**Dual licensing is the long-term direction, not yet built out**: AGPL stays the public license; a separately negotiated commercial license (for parties who can't accept AGPL's disclosure obligation) is the monetization path, without abandoning the open-source public option. This requires two pieces not yet real:
+- A **CLA** (Contributor License Agreement) from every external contributor — without it, selling a commercial license over code someone else wrote isn't legally sound, since dual-licensing requires holding full rights to the whole codebase.
+- **Actual commercial license terms** — a contract, not a wiki note.
+
+Both exist today only as placeholders (`CONTRIBUTING.md`, `COMMERCIAL-LICENSE.md`) that say a commercial path exists and how to start a conversation about it — explicitly not binding legal text. They get drafted for real, with legal review, the first time either is actually needed (a real external PR, or a real commercial inquiry) — building the enforceable version earlier than that would be solving a problem that doesn't exist yet, the same YAGNI reasoning applied elsewhere in this doc (Redis, ingestion scheduling).
 
 ## Testing
 

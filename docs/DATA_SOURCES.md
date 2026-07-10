@@ -31,8 +31,10 @@ All bounding boxes fall within Fortaleza (lon ≈ -38.42 to -38.63, lat ≈ -3.6
 5. `estacoes_bicicletar` duplicates coordinates in `LONG`/`LAT` properties — geometry is the source of truth, drop or validate-then-drop the properties.
 6. `Id`/`ID` not reliable as identifier — 17 blank in ciclovias. API needs its own generated IDs.
 7. `STATUS` has inconsistent values (`"EXISTENTE"` vs `"EXISTENTE 3.0"`) — needs normalization.
-8. `Imagem` field is raw HTML from external Google-hosted URLs — **security risk** (stored XSS if ever returned unsanitized) and reliability risk (hotlinked, may break). Extract the URL only, or drop the field for v1.
+8. `Imagem` field is raw HTML from external Google-hosted URLs — **security risk** (stored XSS if ever returned unsanitized) and reliability risk (hotlinked, may break). Some features have more than one `<img>` tag (4 of 18 in `pontos_de_descanso`). Extract every `src` URL into an array, never store the raw HTML.
 9. `Data de implantação` and `Número de vagas em bicletário` in estacionamentos are ~98% null — not reliable enough to expose as-is.
+10. `Extensão (km)` (ciclovias) mixes formats in 13 of 447 rows: comma decimals (`"0,73"`) and a unit suffix (`"1.3 Km"`, `"0,8km"`). Strip whitespace, strip a trailing `km`/`Km` (case-insensitive), then replace `,` with `.` before casting to float.
+11. `Bairros` (ciclovias) is a comma-separated list, not a single neighborhood — 187 of 447 rows (42%) name more than one. Split into a list; a single-string `neighborhood` filter can't correctly match multi-neighborhood routes.
 
 ## Practical notes
 
