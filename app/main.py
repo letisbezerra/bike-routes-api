@@ -4,6 +4,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.parking.router import router as parking_router
 from app.routes.router import router as routes_router
 from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
@@ -35,5 +36,6 @@ def health():
 # added to v1 after that call would be silently dropped.
 v1 = APIRouter(prefix="/v1")
 v1.include_router(routes_router)
+v1.include_router(parking_router)
 
 app.include_router(v1)
