@@ -5,6 +5,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.parking.router import router as parking_router
+from app.rest_points.router import router as rest_points_router
 from app.routes.router import router as routes_router
 from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
@@ -39,5 +40,6 @@ v1 = APIRouter(prefix="/v1")
 v1.include_router(routes_router)
 v1.include_router(parking_router)
 v1.include_router(stations_router)
+v1.include_router(rest_points_router)
 
 app.include_router(v1)
