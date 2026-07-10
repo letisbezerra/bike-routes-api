@@ -8,6 +8,7 @@ from app.parking.router import router as parking_router
 from app.routes.router import router as routes_router
 from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
+from app.stations.router import router as stations_router
 
 app = FastAPI(title="bike-routes-api")
 
@@ -37,5 +38,6 @@ def health():
 v1 = APIRouter(prefix="/v1")
 v1.include_router(routes_router)
 v1.include_router(parking_router)
+v1.include_router(stations_router)
 
 app.include_router(v1)
