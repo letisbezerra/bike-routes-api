@@ -7,13 +7,13 @@ from app.routes.schemas import BikeRouteFeature, BikeRouteFeatureCollection, Bik
 from app.routes.service import get_route, list_routes
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
-from app.shared.middleware import default_limit, limiter
+from app.shared.middleware import api_scope, default_limit, limiter
 
 router = APIRouter(prefix="/routes", tags=["routes"], dependencies=[Depends(verify_api_key)])
 
 
 @router.get("", response_model=BikeRouteFeatureCollection)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def list_bike_routes(
     request: Request,
     query: Annotated[BikeRouteQuery, Query()],
@@ -30,7 +30,7 @@ def list_bike_routes(
 
 
 @router.get("/{route_id}", response_model=BikeRouteFeature)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def get_bike_route(
     request: Request, route_id: int, session: Session = Depends(get_db)
 ) -> BikeRouteFeature:

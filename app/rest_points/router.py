@@ -7,7 +7,7 @@ from app.rest_points.schemas import RestPointFeature, RestPointFeatureCollection
 from app.rest_points.service import get_rest_point, list_rest_points
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
-from app.shared.middleware import default_limit, limiter
+from app.shared.middleware import api_scope, default_limit, limiter
 
 router = APIRouter(
     prefix="/rest-points", tags=["rest-points"], dependencies=[Depends(verify_api_key)]
@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 @router.get("", response_model=RestPointFeatureCollection)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def list_rest_points_endpoint(
     request: Request,
     query: Annotated[RestPointQuery, Query()],
@@ -27,7 +27,7 @@ def list_rest_points_endpoint(
 
 
 @router.get("/{rest_point_id}", response_model=RestPointFeature)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def get_rest_point_endpoint(
     request: Request, rest_point_id: int, session: Session = Depends(get_db)
 ) -> RestPointFeature:

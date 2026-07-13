@@ -11,7 +11,7 @@ from app.leisure_routes.schemas import (
 from app.leisure_routes.service import get_leisure_route, list_leisure_routes
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
-from app.shared.middleware import default_limit, limiter
+from app.shared.middleware import api_scope, default_limit, limiter
 
 router = APIRouter(
     prefix="/leisure-routes", tags=["leisure-routes"], dependencies=[Depends(verify_api_key)]
@@ -19,7 +19,7 @@ router = APIRouter(
 
 
 @router.get("", response_model=LeisureRouteFeatureCollection)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def list_leisure_routes_endpoint(
     request: Request,
     query: Annotated[LeisureRouteQuery, Query()],
@@ -31,7 +31,7 @@ def list_leisure_routes_endpoint(
 
 
 @router.get("/{leisure_route_id}", response_model=LeisureRouteFeature)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def get_leisure_route_endpoint(
     request: Request, leisure_route_id: int, session: Session = Depends(get_db)
 ) -> LeisureRouteFeature:

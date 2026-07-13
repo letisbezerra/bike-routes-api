@@ -7,13 +7,13 @@ from app.parking.schemas import BikeParkingFeature, BikeParkingFeatureCollection
 from app.parking.service import get_parking, list_parking
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
-from app.shared.middleware import default_limit, limiter
+from app.shared.middleware import api_scope, default_limit, limiter
 
 router = APIRouter(prefix="/parking", tags=["parking"], dependencies=[Depends(verify_api_key)])
 
 
 @router.get("", response_model=BikeParkingFeatureCollection)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def list_bike_parking(
     request: Request,
     query: Annotated[BikeParkingQuery, Query()],
@@ -29,7 +29,7 @@ def list_bike_parking(
 
 
 @router.get("/{parking_id}", response_model=BikeParkingFeature)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def get_bike_parking(
     request: Request, parking_id: int, session: Session = Depends(get_db)
 ) -> BikeParkingFeature:

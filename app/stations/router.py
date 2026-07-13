@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
-from app.shared.middleware import default_limit, limiter
+from app.shared.middleware import api_scope, default_limit, limiter
 from app.stations.schemas import (
     BikeShareStationFeature,
     BikeShareStationFeatureCollection,
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/stations", tags=["stations"], dependencies=[Depends(
 
 
 @router.get("", response_model=BikeShareStationFeatureCollection)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def list_bike_share_stations(
     request: Request,
     query: Annotated[BikeShareStationQuery, Query()],
@@ -34,7 +34,7 @@ def list_bike_share_stations(
 
 
 @router.get("/{station_id}", response_model=BikeShareStationFeature)
-@limiter.limit(default_limit)
+@limiter.shared_limit(default_limit, api_scope)
 def get_bike_share_station(
     request: Request, station_id: int, session: Session = Depends(get_db)
 ) -> BikeShareStationFeature:
