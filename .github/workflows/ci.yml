@@ -43,6 +43,9 @@ jobs:
       - name: Run migrations
         run: uv run alembic upgrade head
 
+      - name: Ingest data
+        run: uv run python -m scripts.ingest
+
       - name: Lint
         run: uv run ruff check .
 
