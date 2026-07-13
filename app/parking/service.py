@@ -25,11 +25,13 @@ def list_parking(
     *,
     page: int,
     page_size: int,
-    type: ParkingType | None = None,
+    parking_type: ParkingType | None = None,
     bbox: tuple[float, float, float, float] | None = None,
 ) -> BikeParkingFeatureCollection:
-    rows, total = list_paginated(session, page=page, page_size=page_size, type=type, bbox=bbox)
-    total_pages = ceil(total / page_size) if total else 0
+    rows, total = list_paginated(
+        session, page=page, page_size=page_size, parking_type=parking_type, bbox=bbox
+    )
+    total_pages = ceil(total / page_size)
     return BikeParkingFeatureCollection(
         features=[_to_feature(row) for row in rows],
         meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),

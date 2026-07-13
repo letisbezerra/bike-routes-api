@@ -1,8 +1,5 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
 
 from app.leisure_routes.router import router as leisure_routes_router
 from app.parking.router import router as parking_router
@@ -15,9 +12,7 @@ from app.stations.router import router as stations_router
 app = FastAPI(title="bike-routes-api")
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 register_error_handlers(app)
-app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +23,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
+    """Unauthenticated, unrated: no @limiter.limit() here on purpose."""
     return {"status": "ok"}
 
 

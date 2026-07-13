@@ -28,7 +28,7 @@ def list_rest_points(
     bbox: tuple[float, float, float, float] | None = None,
 ) -> RestPointFeatureCollection:
     rows, total = list_paginated(session, page=page, page_size=page_size, bbox=bbox)
-    total_pages = ceil(total / page_size) if total else 0
+    total_pages = ceil(total / page_size)
     return RestPointFeatureCollection(
         features=[_to_feature(row) for row in rows],
         meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),

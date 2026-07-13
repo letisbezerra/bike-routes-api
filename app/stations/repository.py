@@ -1,6 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.shared.spatial import apply_bbox_filter
 from app.stations.models import BikeShareStation
 
 
@@ -19,9 +20,7 @@ def list_paginated(
     if neighborhood is not None:
         stmt = stmt.where(BikeShareStation.neighborhood == neighborhood)
     if bbox is not None:
-        min_lon, min_lat, max_lon, max_lat = bbox
-        envelope = func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
-        stmt = stmt.where(func.ST_Intersects(BikeShareStation.geometry, envelope))
+        stmt = apply_bbox_filter(stmt, BikeShareStation.geometry, bbox)
 
     total = session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
     rows = (

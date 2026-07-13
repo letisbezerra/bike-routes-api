@@ -2,6 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.leisure_routes.models import LeisureRoute
+from app.shared.spatial import apply_bbox_filter
 
 
 def list_paginated(
@@ -13,9 +14,7 @@ def list_paginated(
 ) -> tuple[list[LeisureRoute], int]:
     stmt = select(LeisureRoute)
     if bbox is not None:
-        min_lon, min_lat, max_lon, max_lat = bbox
-        envelope = func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
-        stmt = stmt.where(func.ST_Intersects(LeisureRoute.geometry, envelope))
+        stmt = apply_bbox_filter(stmt, LeisureRoute.geometry, bbox)
 
     total = session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
     rows = (

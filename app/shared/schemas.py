@@ -42,15 +42,7 @@ class ListQuery(BaseModel):
     def validate_bbox(cls, value: str | None) -> str | None:
         if value is None:
             return value
-        parts = value.split(",")
-        if len(parts) != 4:
-            raise ValueError(
-                "bbox must have exactly 4 comma-separated values: min_lon,min_lat,max_lon,max_lat"
-            )
-        try:
-            min_lon, min_lat, max_lon, max_lat = (float(p) for p in parts)
-        except ValueError:
-            raise ValueError("bbox values must be numeric") from None
+        min_lon, min_lat, max_lon, max_lat = _split_bbox(value)
         if not (-180 <= min_lon <= 180 and -180 <= max_lon <= 180):
             raise ValueError("bbox longitude must be within [-180, 180]")
         if not (-90 <= min_lat <= 90 and -90 <= max_lat <= 90):
@@ -62,8 +54,20 @@ class ListQuery(BaseModel):
             raise ValueError(f"bbox area exceeds the {_MAX_BBOX_AREA_DEG2} square-degree cap")
         return value
 
+    @property
+    def bbox_tuple(self) -> tuple[float, float, float, float] | None:
+        """The validated `bbox` string, parsed once into floats."""
+        return _split_bbox(self.bbox) if self.bbox else None
 
-def parse_bbox(bbox: str) -> tuple[float, float, float, float]:
-    """Parses an already-validated ListQuery.bbox string into 4 floats."""
-    min_lon, min_lat, max_lon, max_lat = (float(p) for p in bbox.split(","))
+
+def _split_bbox(value: str) -> tuple[float, float, float, float]:
+    parts = value.split(",")
+    if len(parts) != 4:
+        raise ValueError(
+            "bbox must have exactly 4 comma-separated values: min_lon,min_lat,max_lon,max_lat"
+        )
+    try:
+        min_lon, min_lat, max_lon, max_lat = (float(p) for p in parts)
+    except ValueError:
+        raise ValueError("bbox values must be numeric") from None
     return min_lon, min_lat, max_lon, max_lat

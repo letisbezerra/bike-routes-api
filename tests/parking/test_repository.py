@@ -27,7 +27,7 @@ def test_list_paginated_second_page_returns_different_rows():
 def test_list_paginated_filters_by_type():
     with SessionLocal() as session:
         rows, total = list_paginated(
-            session, page=1, page_size=10, type=ParkingType.BICICLETARIO
+            session, page=1, page_size=10, parking_type=ParkingType.BICICLETARIO
         )
     assert total == 5
     assert all(r.type == ParkingType.BICICLETARIO for r in rows)
