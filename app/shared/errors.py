@@ -1,0 +1,58 @@
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+_CODE_BY_STATUS = {
+    400: "bad_request",
+    401: "unauthorized",
+    403: "forbidden",
+    404: "not_found",
+    405: "method_not_allowed",
+    409: "conflict",
+    422: "validation_error",
+    429: "rate_limited",
+    500: "internal_error",
+}
+
+
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    code = _CODE_BY_STATUS.get(exc.status_code, "error")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": {"code": code, "message": str(exc.detail)}},
+        headers=exc.headers,
+    )
+
+
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    # Must stay a plain (non-async) function: SlowAPIMiddleware intercepts
+    # RateLimitExceeded itself, synchronously, before Starlette's own
+    # exception dispatch ever runs — it looks up this handler in
+    # app.exception_handlers but only calls it directly (no await), falling
+    # back to slowapi's own default handler (a bare {"error": "<message>"}
+    # string, not this project's {"error": {"code", "message"}} envelope)
+    # whenever the registered handler is a coroutine function.
+    response = JSONResponse(
+        status_code=429,
+        content={"error": {"code": "rate_limited", "message": str(exc.detail)}},
+    )
+    return request.app.state.limiter._inject_headers(response, request.state.view_rate_limit)
+
+
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    first = exc.errors()[0]
+    location = ".".join(str(part) for part in first["loc"])
+    return JSONResponse(
+        status_code=422,
+        content={"error": {"code": "validation_error", "message": f"{location}: {first['msg']}"}},
+    )
+
+
+def register_error_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)

@@ -4,8 +4,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.shared.config import settings
 
-_default_limit = f"{settings.rate_limit_per_minute}/minute"
-limiter = Limiter(key_func=get_remote_address, default_limits=[_default_limit])
+default_limit = f"{settings.rate_limit_per_minute}/minute"
+# One shared bucket (see api_scope) across every endpoint, per client — not
+# one counter per endpoint. @limiter.limit() would give each decorated
+# function its own independent counter, so a client throttled on one
+# endpoint could keep hitting the other 9 at the same rate each.
+api_scope = "api"
+limiter = Limiter(key_func=get_remote_address)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
