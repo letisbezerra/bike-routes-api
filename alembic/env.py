@@ -11,6 +11,7 @@ from app.rest_points.models import RestPoint  # noqa: F401
 from app.routes.models import BikeRoute  # noqa: F401
 from app.shared.config import settings
 from app.shared.database import Base
+from app.shared.models import ApiKey  # noqa: F401
 from app.stations.models import BikeShareStation  # noqa: F401
 
 config = context.config

@@ -18,13 +18,15 @@ finishes, but real resource endpoints need the DB).
 
 ## Drive
 
-All resource endpoints require `X-API-Key: dev-local-key` (matches
-`API_KEY_HASH` in `.env.example` — if local `.env` uses a different key,
-generate the hash: `python3 -c "import hashlib; print(hashlib.sha256(b'your-key').hexdigest())"`).
+All resource endpoints require an `X-API-Key` header. Keys are issued via
+`scripts/manage_keys.py`, not a static value in `.env` (Phase 4 replaced
+the single `.env`-based key with a DB-backed `api_keys` table):
 
 ```bash
-curl -H "X-API-Key: dev-local-key" "http://127.0.0.1:8000/v1/routes"
-curl -H "X-API-Key: dev-local-key" "http://127.0.0.1:8000/v1/routes/1"
+uv run python -m scripts.manage_keys issue --label "manual-verify"
+# copy the printed key — it's shown once
+curl -H "X-API-Key: <printed-key>" "http://127.0.0.1:8000/v1/routes"
+curl -H "X-API-Key: <printed-key>" "http://127.0.0.1:8000/v1/routes/1"
 ```
 
 Resources: `routes`, `parking`, `stations`, `rest-points`, `leisure-routes`.

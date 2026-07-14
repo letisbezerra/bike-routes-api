@@ -1,8 +1,14 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from app.shared.middleware import apply_security_headers
+
+logger = logging.getLogger(__name__)
 
 _CODE_BY_STATUS = {
     400: "bad_request",
@@ -52,7 +58,30 @@ async def validation_exception_handler(
     )
 
 
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Full traceback stays server-side only — the client never sees exception
+    # details, per docs/ARCHITECTURE.md's "Errors never leak internals."
+    # method/path passed as structured fields, not interpolated into the
+    # message string, so a crafted path can't inject fake log lines.
+    logger.error(
+        "Unhandled exception",
+        extra={"http_method": request.method, "http_path": request.url.path},
+        exc_info=exc,
+    )
+    response = JSONResponse(
+        status_code=500,
+        content={"error": {"code": "internal_error", "message": "An unexpected error occurred."}},
+    )
+    # A handler registered for the bare Exception class runs as Starlette's
+    # outermost ServerErrorMiddleware — outside SecurityHeadersMiddleware,
+    # which never gets to run its post-call_next header-setting lines for
+    # this path. Applied directly here so a genuinely unhandled exception
+    # doesn't ship without them.
+    return apply_security_headers(response)
+
+
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+    app.add_exception_handler(Exception, unhandled_exception_handler)

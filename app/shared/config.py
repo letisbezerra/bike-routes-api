@@ -5,7 +5,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str
-    api_key_hash: str
     rate_limit_per_minute: int = 60
     environment: str = "development"
 
