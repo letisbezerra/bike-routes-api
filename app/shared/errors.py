@@ -61,7 +61,13 @@ async def validation_exception_handler(
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     # Full traceback stays server-side only — the client never sees exception
     # details, per docs/ARCHITECTURE.md's "Errors never leak internals."
-    logger.error("Unhandled exception on %s %s", request.method, request.url.path, exc_info=exc)
+    # method/path passed as structured fields, not interpolated into the
+    # message string, so a crafted path can't inject fake log lines.
+    logger.error(
+        "Unhandled exception",
+        extra={"http_method": request.method, "http_path": request.url.path},
+        exc_info=exc,
+    )
     response = JSONResponse(
         status_code=500,
         content={"error": {"code": "internal_error", "message": "An unexpected error occurred."}},
