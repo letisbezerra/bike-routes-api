@@ -18,6 +18,12 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 def hash_key(key: str) -> str:
+    # No per-key salt: salting defends against precomputed dictionaries for
+    # low-entropy secrets (reused/guessable passwords). Keys here are always
+    # secrets.token_urlsafe(32) (256 bits), never chosen or reused by a
+    # human — a rainbow table over that keyspace isn't feasible. Adding a
+    # salt column now would be complexity with nothing to defend against;
+    # revisit only if key generation itself is ever weakened.
     return hashlib.sha256(key.encode()).hexdigest()
 
 
