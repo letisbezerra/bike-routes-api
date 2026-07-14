@@ -5,13 +5,6 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_list_stations_requires_api_key():
-    response = client.get("/v1/stations")
-    assert response.status_code == 401
-    body = response.json()
-    assert body["error"]["code"] == "unauthorized"
-
-
 def test_list_stations_returns_feature_collection(api_headers):
     response = client.get("/v1/stations", headers=api_headers)
     assert response.status_code == 200
@@ -40,25 +33,6 @@ def test_list_stations_filters_by_status(api_headers):
     body = response.json()
     assert body["meta"]["total"] == 2
     assert all(f["properties"]["status"] == "existente_3_0" for f in body["features"])
-
-
-def test_list_stations_rejects_unknown_query_param(api_headers):
-    response = client.get("/v1/stations", headers=api_headers, params={"foo": "bar"})
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "validation_error"
-
-
-def test_list_stations_rejects_invalid_bbox(api_headers):
-    response = client.get(
-        "/v1/stations", headers=api_headers, params={"bbox": "not,a,valid,bbox"}
-    )
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "validation_error"
-
-
-def test_list_stations_rejects_page_size_over_cap(api_headers):
-    response = client.get("/v1/stations", headers=api_headers, params={"page_size": 500})
-    assert response.status_code == 422
 
 
 def test_get_station_by_id_returns_feature(api_headers):

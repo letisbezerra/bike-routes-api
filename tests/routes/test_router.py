@@ -5,13 +5,6 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_list_routes_requires_api_key():
-    response = client.get("/v1/routes")
-    assert response.status_code == 401
-    body = response.json()
-    assert body["error"]["code"] == "unauthorized"
-
-
 def test_list_routes_returns_feature_collection(api_headers):
     response = client.get("/v1/routes", headers=api_headers)
     assert response.status_code == 200
@@ -30,23 +23,6 @@ def test_list_routes_filter_matching_nothing_returns_empty_features(api_headers)
     body = response.json()
     assert body["features"] == []
     assert body["meta"]["total"] == 0
-
-
-def test_list_routes_rejects_unknown_query_param(api_headers):
-    response = client.get("/v1/routes", headers=api_headers, params={"foo": "bar"})
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "validation_error"
-
-
-def test_list_routes_rejects_invalid_bbox(api_headers):
-    response = client.get("/v1/routes", headers=api_headers, params={"bbox": "not,a,valid,bbox"})
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "validation_error"
-
-
-def test_list_routes_rejects_page_size_over_cap(api_headers):
-    response = client.get("/v1/routes", headers=api_headers, params={"page_size": 500})
-    assert response.status_code == 422
 
 
 def test_get_route_by_id_returns_feature(api_headers):

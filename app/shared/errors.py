@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.shared.middleware import apply_security_headers
+
 logger = logging.getLogger(__name__)
 
 _CODE_BY_STATUS = {
@@ -60,10 +62,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     # Full traceback stays server-side only — the client never sees exception
     # details, per docs/ARCHITECTURE.md's "Errors never leak internals."
     logger.error("Unhandled exception on %s %s", request.method, request.url.path, exc_info=exc)
-    return JSONResponse(
+    response = JSONResponse(
         status_code=500,
         content={"error": {"code": "internal_error", "message": "An unexpected error occurred."}},
     )
+    # A handler registered for the bare Exception class runs as Starlette's
+    # outermost ServerErrorMiddleware — outside SecurityHeadersMiddleware,
+    # which never gets to run its post-call_next header-setting lines for
+    # this path. Applied directly here so a genuinely unhandled exception
+    # doesn't ship without them.
+    return apply_security_headers(response)
 
 
 def register_error_handlers(app: FastAPI) -> None:
