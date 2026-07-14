@@ -110,7 +110,7 @@ Priority stays correctness → security (not reordered) — most real vulnerabil
 **CORS: open (`*`), not restrictive.** Reversed from the earlier draft — CORS only affects browser JS callers; it does nothing against server-side/curl/script abuse, which rate limiting + mandatory keys already cover. Restricting it would only block legitimate developers building web frontends, contradicting the project's own goal (usable from web, mobile, anywhere).
 
 For API consumers:
-- Rate limiting by IP **and** mandatory API key, with temporary ban after repeated violations
+- Rate limiting by IP **and** mandatory API key. **A temporary IP ban after repeated violations was considered and deferred (Phase 4)**: with a mandatory key on every request, the actual lever against a persistent bad actor is revoking their key (`api_keys` table, `scripts/manage_keys.py`), not throttling their IP — an IP ban only slows down insistence, while the per-minute limit (already shared per client) already caps volume regardless. A real IP ban also needs state that survives process restarts (free-tier hosts spin down), which means Redis — infra already ruled out for MVP above, same YAGNI reasoning.
 - Strict validation on all input (bbox, pagination, filters) — Pydantic `extra="forbid"` rejects unexpected params; capped page size and bbox area block expensive/malicious queries
 - HTTPS enforced, redirect HTTP→HTTPS, HSTS header (`includeSubDomains`)
 - Security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`
