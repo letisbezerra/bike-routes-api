@@ -5,6 +5,7 @@ from app.leisure_routes.router import router as leisure_routes_router
 from app.parking.router import router as parking_router
 from app.rest_points.router import router as rest_points_router
 from app.routes.router import router as routes_router
+from app.shared.config import settings
 from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
 from app.stations.router import router as stations_router
@@ -42,6 +43,11 @@ app = FastAPI(
 
 app.state.limiter = limiter
 register_error_handlers(app)
+
+if settings.enable_observability:
+    from app.shared.observability import setup_observability
+
+    setup_observability(app)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,

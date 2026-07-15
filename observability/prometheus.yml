@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: bike-routes-api
+    static_configs:
+      # host.docker.internal: the app runs on the host (uv run uvicorn),
+      # not in this compose file — Docker Desktop's DNS name for the host.
+      - targets: ["host.docker.internal:8000"]

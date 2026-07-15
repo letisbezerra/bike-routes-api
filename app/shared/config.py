@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str
     rate_limit_per_minute: int = 60
     environment: str = "development"
+    enable_observability: bool = False
 
 
 settings = Settings()

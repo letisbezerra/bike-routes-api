@@ -73,6 +73,20 @@ uv run python -m scripts.manage_keys list
 uv run python -m scripts.manage_keys revoke --key-id <id>
 ```
 
+## Observability demo (local only)
+
+Not part of the production deploy — UptimeRobot + Sentry cover the real deployed API (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)). This is a local, opt-in demo of metrics/tracing wiring:
+
+```bash
+docker compose --profile observability up -d   # Prometheus, Grafana, Tempo
+```
+
+Set `ENABLE_OBSERVABILITY=true` in `.env` and start the app as usual. Then:
+
+- Prometheus metrics: `http://127.0.0.1:8000/metrics`
+- Grafana (Prometheus + Tempo pre-wired as data sources, no manual setup): `http://localhost:3000`
+- Every request is traced end-to-end, including the PostGIS query it issues — visible in Grafana's Tempo explore view.
+
 ## Architecture
 
 Full stack decisions and reasoning: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Data quality notes and license detail: [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md).
