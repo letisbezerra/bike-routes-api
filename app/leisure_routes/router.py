@@ -12,13 +12,20 @@ from app.leisure_routes.service import get_leisure_route, list_leisure_routes
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
 from app.shared.middleware import api_scope, default_limit, limiter
+from app.shared.openapi import DETAIL_RESPONSES, LIST_RESPONSES
 
 router = APIRouter(
     prefix="/leisure-routes", tags=["leisure-routes"], dependencies=[Depends(verify_api_key)]
 )
 
 
-@router.get("", response_model=LeisureRouteFeatureCollection)
+@router.get(
+    "",
+    response_model=LeisureRouteFeatureCollection,
+    summary="List leisure bike routes",
+    description="Paginated, bbox-filterable list of leisure cycling routes.",
+    responses=LIST_RESPONSES,
+)
 @limiter.shared_limit(default_limit, api_scope)
 def list_leisure_routes_endpoint(
     request: Request,
@@ -30,7 +37,13 @@ def list_leisure_routes_endpoint(
     )
 
 
-@router.get("/{leisure_route_id}", response_model=LeisureRouteFeature)
+@router.get(
+    "/{leisure_route_id}",
+    response_model=LeisureRouteFeature,
+    summary="Get a leisure bike route by id",
+    description="Single leisure cycling route as a GeoJSON Feature.",
+    responses=DETAIL_RESPONSES,
+)
 @limiter.shared_limit(default_limit, api_scope)
 def get_leisure_route_endpoint(
     request: Request, leisure_route_id: int, session: Session = Depends(get_db)

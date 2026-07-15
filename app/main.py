@@ -9,7 +9,36 @@ from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
 from app.stations.router import router as stations_router
 
-app = FastAPI(title="bike-routes-api")
+app = FastAPI(
+    title="bike-routes-api",
+    description=(
+        "Free, public REST API over Fortaleza's open bike infrastructure data "
+        "(routes, parking, bike-share stations, rest points). Data source: "
+        "AMC/Prefeitura de Fortaleza — see the README for attribution details. "
+        "Every endpoint requires an `X-API-Key` header; contact the maintainer "
+        "for a key."
+    ),
+    version="0.1.0",
+    contact={
+        "name": "Issues & key requests",
+        "url": "https://github.com/letisbezerra/bike-routes-api/issues",
+    },
+    license_info={
+        "name": "AGPL-3.0",
+        "url": "https://github.com/letisbezerra/bike-routes-api/blob/main/LICENSE",
+    },
+    openapi_tags=[
+        {
+            "name": "routes",
+            "description": "Bike routes — ciclovias, ciclofaixas, ciclorrotas, passeios "
+            "compartilhados.",
+        },
+        {"name": "parking", "description": "Bike parking spots — paraciclos and bicicletários."},
+        {"name": "stations", "description": "Bicicletar bike-share stations."},
+        {"name": "rest-points", "description": "Rest points along bike routes."},
+        {"name": "leisure-routes", "description": "Leisure cycling routes."},
+    ],
+)
 
 app.state.limiter = limiter
 register_error_handlers(app)
@@ -21,7 +50,11 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    summary="Liveness check",
+    description="Unauthenticated, unrated — used by uptime monitors.",
+)
 def health():
     """Unauthenticated, unrated: no @limiter.limit() here on purpose."""
     return {"status": "ok"}

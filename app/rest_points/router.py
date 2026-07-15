@@ -8,13 +8,20 @@ from app.rest_points.service import get_rest_point, list_rest_points
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
 from app.shared.middleware import api_scope, default_limit, limiter
+from app.shared.openapi import DETAIL_RESPONSES, LIST_RESPONSES
 
 router = APIRouter(
     prefix="/rest-points", tags=["rest-points"], dependencies=[Depends(verify_api_key)]
 )
 
 
-@router.get("", response_model=RestPointFeatureCollection)
+@router.get(
+    "",
+    response_model=RestPointFeatureCollection,
+    summary="List rest points",
+    description="Paginated, bbox-filterable list of rest points along bike routes.",
+    responses=LIST_RESPONSES,
+)
 @limiter.shared_limit(default_limit, api_scope)
 def list_rest_points_endpoint(
     request: Request,
@@ -26,7 +33,13 @@ def list_rest_points_endpoint(
     )
 
 
-@router.get("/{rest_point_id}", response_model=RestPointFeature)
+@router.get(
+    "/{rest_point_id}",
+    response_model=RestPointFeature,
+    summary="Get a rest point by id",
+    description="Single rest point as a GeoJSON Feature.",
+    responses=DETAIL_RESPONSES,
+)
 @limiter.shared_limit(default_limit, api_scope)
 def get_rest_point_endpoint(
     request: Request, rest_point_id: int, session: Session = Depends(get_db)
