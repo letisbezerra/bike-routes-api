@@ -1,4 +1,4 @@
-# bike-routes-api
+# BikesAPI
 
 [![CI](https://github.com/letisbezerra/bike-routes-api/actions/workflows/ci.yml/badge.svg)](https://github.com/letisbezerra/bike-routes-api/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
