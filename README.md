@@ -4,7 +4,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue)](pyproject.toml)
 
-Free, public REST API over Fortaleza's (Ceará, Brazil) open bike infrastructure data — bike routes, parking, bike-share stations, and rest points.
+Free, public REST API over Fortaleza's (Ceará, Brazil) open bike infrastructure data — bike routes, parking, bike-share stations, rest points, and leisure routes.
 
 Fortaleza's city hall publishes this data as raw GeoJSON files on its open-data portal, but offers no API to query it — anyone who wants to build on top of it has to download the full files and parse them client-side, with no filtering, no pagination, and no spatial queries. This project turns that into a proper, versioned, authenticated REST API: pick a bounding box, filter by category, paginate — get back GeoJSON `Feature`s any map library can render directly.
 
