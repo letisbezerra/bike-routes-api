@@ -1,5 +1,6 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from app.leisure_routes.router import router as leisure_routes_router
 from app.parking.router import router as parking_router
@@ -56,8 +57,16 @@ app.add_middleware(
 )
 
 
-@app.get(
+@app.get("/", include_in_schema=False)
+def root():
+    """Bare-domain visitors (e.g. from the README/portfolio link) land on the
+    docs instead of a raw 404 — the API itself has no root resource."""
+    return RedirectResponse("/docs")
+
+
+@app.api_route(
     "/health",
+    methods=["GET", "HEAD"],
     summary="Liveness check",
     description="Unauthenticated, unrated — used by uptime monitors.",
 )
