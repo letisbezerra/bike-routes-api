@@ -10,6 +10,20 @@ Fortaleza's city hall publishes this data as raw GeoJSON files on its open-data 
 
 **Fonte: AMC/Prefeitura de Fortaleza.** Data published by the city under its "Dados Abertos" portal with no declared license — used here with attribution and no implied endorsement by the city.
 
+## Try it live
+
+Deployed and public: **https://bike-routes-api.onrender.com** ([Swagger UI](https://bike-routes-api.onrender.com/docs)).
+
+Shared demo key, for quick testing — paste it into Swagger's **Authorize** button, or:
+
+```bash
+curl -H "X-API-Key: I8CKqK3n5BNcFBKxVLVZFl0wZ6YdSwoiogzOpZo71KE" "https://bike-routes-api.onrender.com/v1/routes?page_size=5"
+```
+
+This key is shared and rate-limited — not for production use. If it's been revoked (e.g. after abuse) or you need your own, open an issue (see [Authentication](#authentication)).
+
+Free-tier hosting spins down after inactivity — the first request after a quiet period can take up to a minute.
+
 ## Data
 
 | Resource | Endpoint | Geometry |
@@ -24,7 +38,7 @@ Every resource supports pagination and a bounding-box filter (`bbox=min_lon,min_
 
 ## Authentication
 
-Every request requires an `X-API-Key` header. Keys are issued manually (no self-service signup yet) — see [Local setup](#local-setup) to issue your own for development, or contact the maintainer for a production key.
+Every request requires an `X-API-Key` header. Keys are issued manually (no self-service signup yet) — use the shared demo key above for quick testing, see [Local setup](#local-setup) to issue your own for development, or open an issue for a dedicated production key.
 
 ## API docs
 
