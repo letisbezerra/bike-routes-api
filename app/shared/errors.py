@@ -1,5 +1,6 @@
 import logging
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -68,6 +69,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         extra={"http_method": request.method, "http_path": request.url.path},
         exc_info=exc,
     )
+    # Explicit, not relying on Sentry's Starlette auto-instrumentation: a
+    # handler registered for the bare Exception class (this one) means the
+    # exception never reaches Starlette as "unhandled", so the automatic
+    # capture never fires. A no-op when SENTRY_DSN isn't set.
+    sentry_sdk.capture_exception(exc)
     response = JSONResponse(
         status_code=500,
         content={"error": {"code": "internal_error", "message": "An unexpected error occurred."}},

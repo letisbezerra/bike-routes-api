@@ -16,6 +16,7 @@ dependencies = [
     "psycopg[binary]>=3.3.4",
     "pydantic-settings>=2.14.2",
     "pyproj>=3.7.0",
+    "sentry-sdk>=2.65.0",
     "shapely>=2.0.6",
     "slowapi>=0.1.10",
     "sqlalchemy>=2.0.51",

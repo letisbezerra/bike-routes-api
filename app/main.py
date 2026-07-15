@@ -11,6 +11,14 @@ from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
 from app.stations.router import router as stations_router
 
+if settings.sentry_dsn:
+    import sentry_sdk
+
+    # Error monitoring only — no tracing/profiling/PII (docs/ARCHITECTURE.md:
+    # "Sentry catches unhandled exceptions... second priority", distinct from
+    # the local-only tracing/metrics demo in app/shared/observability.py).
+    sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
+
 app = FastAPI(
     title="bike-routes-api",
     description=(

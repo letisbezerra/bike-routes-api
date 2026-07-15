@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 60
     environment: str = "development"
     enable_observability: bool = False
+    sentry_dsn: str | None = None
 
 
 settings = Settings()
