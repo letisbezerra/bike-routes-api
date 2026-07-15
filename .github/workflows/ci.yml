@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgis:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: bike_routes_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d bike_routes_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Set up environment
+        run: cp .env.example .env
+
+      - name: Run migrations
+        run: uv run alembic upgrade head
+
+      - name: Ingest data
+        run: uv run python -m scripts.ingest
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Audit dependencies
+        run: uv run pip-audit
+
+      - name: Test
+        run: uv run pytest

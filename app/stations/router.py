@@ -1,0 +1,58 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy.orm import Session
+
+from app.shared.auth import verify_api_key
+from app.shared.database import get_db
+from app.shared.middleware import api_scope, default_limit, limiter
+from app.shared.openapi import LIST_RESPONSES, detail_responses
+from app.stations.schemas import (
+    BikeShareStationFeature,
+    BikeShareStationFeatureCollection,
+    BikeShareStationQuery,
+)
+from app.stations.service import get_station, list_stations
+
+router = APIRouter(prefix="/stations", tags=["stations"], dependencies=[Depends(verify_api_key)])
+
+
+@router.get(
+    "",
+    response_model=BikeShareStationFeatureCollection,
+    summary="List bike-share stations",
+    description="Paginated, bbox-filterable list of Bicicletar stations. "
+    "Filter by `status` and/or `neighborhood`.",
+    responses=LIST_RESPONSES,
+)
+@limiter.shared_limit(default_limit, api_scope)
+def list_bike_share_stations(
+    request: Request,
+    query: Annotated[BikeShareStationQuery, Query()],
+    session: Session = Depends(get_db),
+) -> BikeShareStationFeatureCollection:
+    return list_stations(
+        session,
+        page=query.page,
+        page_size=query.page_size,
+        status=query.status,
+        neighborhood=query.neighborhood,
+        bbox=query.bbox_tuple,
+    )
+
+
+@router.get(
+    "/{station_id}",
+    response_model=BikeShareStationFeature,
+    summary="Get a bike-share station by id",
+    description="Single bike-share station as a GeoJSON Feature.",
+    responses=detail_responses("Bike share station not found"),
+)
+@limiter.shared_limit(default_limit, api_scope)
+def get_bike_share_station(
+    request: Request, station_id: int, session: Session = Depends(get_db)
+) -> BikeShareStationFeature:
+    feature = get_station(session, station_id)
+    if feature is None:
+        raise HTTPException(status_code=404, detail="Bike share station not found")
+    return feature
