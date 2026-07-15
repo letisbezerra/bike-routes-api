@@ -5,7 +5,8 @@ Decisions and their reasoning.
 ## Stack
 
 - **Framework: FastAPI.** Beats Django/GeoDjango on performance and free OpenAPI docs; beats Flask on both counts too plus built-in validation. Django's edge (GeoDjango's native spatial ORM, admin panel for data curation) doesn't outweigh pulling in auth/sessions/admin machinery this public GET-only API doesn't use — data curation is solved by a clean ingestion script instead.
-- **Database: PostgreSQL + PostGIS, via GeoAlchemy2.** Rejected SQLite/SpatiaLite (free app hosts have ephemeral disk — would risk data loss; weaker query planner for complex spatial predicates), Firebase/Firestore (no native LineString/spatial index — can't represent bike routes correctly), MongoDB (data is tabular, not schema-flexible), DuckDB (analytical tool, not built for concurrent request serving). Free hosting: Supabase or Neon (managed Postgres, free tier, PostGIS included, persistent).
+- **Database: PostgreSQL + PostGIS, via GeoAlchemy2.** Rejected SQLite/SpatiaLite (free app hosts have ephemeral disk — would risk data loss; weaker query planner for complex spatial predicates), Firebase/Firestore (no native LineString/spatial index — can't represent bike routes correctly), MongoDB (data is tabular, not schema-flexible), DuckDB (analytical tool, not built for concurrent request serving). **Hosting: Neon** (managed Postgres, free tier, PostGIS as an extension, persistent) — decided over Supabase (same free storage/PostGIS support) specifically because Neon's compute auto-resumes on the next Postgres connection after idling out, where Supabase requires a manual dashboard action to un-pause after 7 days idle; this app connects via a raw `psycopg`/SQLAlchemy string, not either platform's client SDK, so their non-Postgres features (Supabase Auth/Storage, Neon branching) don't factor in either way.
+- **App hosting: Render** (free tier, 512MB, spins down after 15 min inactivity — the exact risk the UptimeRobot monitor below exists to catch). Railway and Fly.io were the other `docs/PLAN.md` candidates; both dropped their permanent no-card free tiers, disqualified outright by `docs/CONTEXT.md` §3's fixed "no paid tiers" rule, not by preference. Render's platform sits behind Cloudflare by default (visible in response headers) — satisfies the DDoS/bot-mitigation item below with zero separate configuration.
 
 ## Components
 
@@ -94,8 +95,8 @@ Applies directly:
 Adapted for this project (no user accounts):
 - Auth = API key for rate limiting, not JWT/OAuth2 user identity
 - No ownership-based authorization (no resource has an "owner")
-- Observability starts as structured logs; add Prometheus/Grafana only if scale demands it
-- **Monitoring, day-1, not deferred**: UptimeRobot (free) pings `GET /health` to catch full outages — closes the loop on the known free-tier-hosting spin-down risk, not a hypothetical. Sentry (free tier) catches unhandled exceptions within a running request — different failure mode (app alive but a request breaks), second priority.
+- **Production observability stays structured logs + Sentry + UptimeRobot** — Prometheus/Grafana/OpenTelemetry were not added because scale demanded it (still ~1000 rows, low traffic); they exist only as a local-only technical demo (`docker compose --profile observability`, off by default via `ENABLE_OBSERVABILITY`), added to demonstrate hands-on observability experience, explicitly not part of the deployed environment. See README "Observability demo".
+- **Monitoring, day-1, not deferred**: UptimeRobot (free) pings `GET /health` to catch full outages — closes the loop on the known free-tier-hosting spin-down risk, not a hypothetical. `/health` accepts `HEAD` as well as `GET` — UptimeRobot's checks default to `HEAD`, which a GET-only route rejects with `405`, a false "down" alert caught live during setup. Sentry (free tier) catches unhandled exceptions within a running request — different failure mode (app alive but a request breaks), second priority. Error monitoring only (no tracing/profiling/PII) — captured via an explicit `sentry_sdk.capture_exception()` call inside the app's own catch-all exception handler, not Sentry's auto-instrumentation: a handler registered for the bare `Exception` class runs as Starlette's outermost `ServerErrorMiddleware`, so the exception never reaches Starlette as "unhandled" and the automatic capture never fires — verified live, the same outer-middleware quirk already documented below for security headers.
 
 Doesn't apply for MVP:
 - Idempotency concerns (GET-only, inherently idempotent)
@@ -107,25 +108,27 @@ Priority stays correctness → security (not reordered) — most real vulnerabil
 
 **API key: mandatory for every request**, not optional. Gives per-key traceability and revocation, not just weak/spoofable IP tracking — worth the signup friction, standard for serious public data APIs.
 
+**One published, shared demo key** (README "Try it live") is a deliberate exception, not a quiet reopening of `docs/CONTEXT.md` §1's "no self-service endpoint" decision — that decision is about not building a public issuance *endpoint* (an unattended attack surface); this is one key the maintainer issued and chose to publish, same pattern api.data.gov/NASA use (`DEMO_KEY`). Rate limiting is per-IP (`get_remote_address`), not per-key, so a shared key doesn't create a shared throttling bucket — every visitor already gets an independent budget regardless of how many people hold the same key. If abused, revoking this one key doesn't affect any other.
+
 **CORS: open (`*`), not restrictive.** Reversed from the earlier draft — CORS only affects browser JS callers; it does nothing against server-side/curl/script abuse, which rate limiting + mandatory keys already cover. Restricting it would only block legitimate developers building web frontends, contradicting the project's own goal (usable from web, mobile, anywhere).
 
 For API consumers:
 - Rate limiting by IP **and** mandatory API key. **A temporary IP ban after repeated violations was considered and deferred (Phase 4)**: with a mandatory key on every request, the actual lever against a persistent bad actor is revoking their key (`api_keys` table, `scripts/manage_keys.py`), not throttling their IP — an IP ban only slows down insistence, while the per-minute limit (already shared per client) already caps volume regardless. A real IP ban also needs state that survives process restarts (free-tier hosts spin down), which means Redis — infra already ruled out for MVP above, same YAGNI reasoning.
 - Strict validation on all input (bbox, pagination, filters) — Pydantic `extra="forbid"` rejects unexpected params; capped page size and bbox area block expensive/malicious queries
 - HTTPS enforced, redirect HTTP→HTTPS, HSTS header (`includeSubDomains`)
-- Security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`
+- Security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`. Applied via a helper called from two places, not middleware alone: a handler registered for the bare `Exception` class runs as Starlette's outermost `ServerErrorMiddleware`, outside `app.add_middleware()`'s stack, so `SecurityHeadersMiddleware` never runs on that path — the same quirk affects Sentry's auto-instrumentation (see Observability above), fixed the same way, by calling explicitly instead of relying on the middleware layer.
 - CORS open (`*`) — see above
 - Errors never leak internals (stack trace, file paths, raw SQL errors) — generic message to client, full detail server-side only
 - `Imagem` field (raw HTML in source data) sanitized or dropped at ingestion — known stored-XSS risk
 - OpenAPI docs (`/docs`, `/redoc`) stay public on purpose — documentation is part of the product, not a leak
-- Cloudflare (free tier) in front of the API — DDoS/bot mitigation, zero code
+- Cloudflare — via Render's platform by default, see Stack above; nothing separately configured
 
 For the operator (me):
 - DB credentials and API keys via env vars/secrets manager, never hardcoded
-- DB app user has least privilege (`SELECT` only), never superuser
+- **DB app user has least privilege**: the deployed API connects as `bike_routes_app`, not the Neon `neondb_owner` role — `SELECT` on the 5 data tables, `SELECT` + `UPDATE(last_used_at)` only on `api_keys` (that column is the only write the running API ever makes; verified live: `INSERT`/`DELETE`/updating any other column all fail with `InsufficientPrivilege`). `neondb_owner` still runs migrations and `scripts/ingest.py`/`manage_keys.py` — manually, via `.env.local`, never through the deployed app.
 - Database not publicly network-exposed, only the app reaches it
 - API keys stored hashed (one-way, like a password), never plaintext or reversibly encrypted; revocable without redeploying
-- Encryption at rest and TLS on the DB connection: provided by Supabase/Neon by default, not something we implement
+- Encryption at rest and TLS on the DB connection: provided by Neon by default, not something we implement
 - Dependency vulnerability scanning (`pip-audit`/Dependabot) + pinned/locked versions, not just scanning on the fly
 - Logs aimed at detecting abuse/attack, not just performance
 
