@@ -2,6 +2,7 @@ import sentry_sdk
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from app.leisure_routes.router import router as leisure_routes_router
 from app.parking.router import router as parking_router
@@ -27,10 +28,20 @@ from app.stations.router import router as stations_router
 # reached the Sentry event ~28 times through those paths despite the
 # key-name scrubber. Turning off local-variable capture entirely removes
 # all of them at once, rather than trying to enumerate every leak path.
+# Cloudflare/Render sit in front of this app and forward the real client IP
+# via CF-Connecting-IP/True-Client-IP — Sentry's own header filter only
+# knows the generic WSGI set (Authorization, Cookie, X-Api-Key,
+# X-Forwarded-For, ...), not CDN-specific headers, so those two reached a
+# real production event in clear text (confirmed live: event 8d89c763,
+# 2026-07-15). A custom EventScrubber closes that gap; it runs on top of,
+# not instead of, Sentry's own filtering.
 sentry_sdk.init(
     dsn=settings.sentry_dsn,
     environment=settings.environment,
     include_local_variables=False,
+    event_scrubber=EventScrubber(
+        denylist=[*DEFAULT_DENYLIST, "cf-connecting-ip", "true-client-ip"]
+    ),
 )
 
 app = FastAPI(
