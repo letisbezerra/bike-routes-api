@@ -7,11 +7,14 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.shared.middleware import apply_security_headers
+from app.shared.middleware import apply_cors_header, apply_security_headers
 
 logger = logging.getLogger(__name__)
 
-_CODE_BY_STATUS = {
+# Public (no leading underscore): also imported by app/shared/openapi.py so
+# documented error-code examples can't drift from what handlers actually
+# return.
+CODE_BY_STATUS = {
     400: "bad_request",
     401: "unauthorized",
     403: "forbidden",
@@ -25,7 +28,7 @@ _CODE_BY_STATUS = {
 
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    code = _CODE_BY_STATUS.get(exc.status_code, "error")
+    code = CODE_BY_STATUS.get(exc.status_code, "error")
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": {"code": code, "message": str(exc.detail)}},
@@ -79,11 +82,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         content={"error": {"code": "internal_error", "message": "An unexpected error occurred."}},
     )
     # A handler registered for the bare Exception class runs as Starlette's
-    # outermost ServerErrorMiddleware — outside SecurityHeadersMiddleware,
-    # which never gets to run its post-call_next header-setting lines for
-    # this path. Applied directly here so a genuinely unhandled exception
-    # doesn't ship without them.
-    return apply_security_headers(response)
+    # outermost ServerErrorMiddleware — outside SecurityHeadersMiddleware and
+    # CORSMiddleware alike, neither of which gets to run on this path.
+    # Applied directly here so a genuinely unhandled exception doesn't ship
+    # without them (a missing CORS header here previously turned a real
+    # server error into an opaque CORS failure for browser callers instead
+    # of the intended JSON error body).
+    return apply_cors_header(apply_security_headers(response))
 
 
 def register_error_handlers(app: FastAPI) -> None:

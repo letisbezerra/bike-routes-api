@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
 from app.shared.middleware import api_scope, default_limit, limiter
-from app.shared.openapi import DETAIL_RESPONSES, LIST_RESPONSES
+from app.shared.openapi import LIST_RESPONSES, detail_responses
 from app.stations.schemas import (
     BikeShareStationFeature,
     BikeShareStationFeatureCollection,
@@ -46,7 +46,7 @@ def list_bike_share_stations(
     response_model=BikeShareStationFeature,
     summary="Get a bike-share station by id",
     description="Single bike-share station as a GeoJSON Feature.",
-    responses=DETAIL_RESPONSES,
+    responses=detail_responses("Bike share station not found"),
 )
 @limiter.shared_limit(default_limit, api_scope)
 def get_bike_share_station(

@@ -20,6 +20,16 @@ def apply_security_headers(response):
     return response
 
 
+def apply_cors_header(response):
+    # Mirrors app/main.py's CORSMiddleware config (allow_origins=["*"], no
+    # credentials) — a static "*" is only correct because credentials aren't
+    # allowed; if that ever changes, this must echo the request Origin
+    # instead. Needed on the same paths as apply_security_headers: a bare
+    # Exception handler runs outside CORSMiddleware too.
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)

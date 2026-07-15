@@ -17,3 +17,11 @@ def test_health_response_has_security_headers():
 
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "strict-transport-security" in response.headers
+
+
+def test_health_accepts_head():
+    # Uptime monitors default to HEAD, not GET — a GET-only route rejects it
+    # with 405 (a real false "down" alert this once caused in production).
+    response = client.head("/health")
+
+    assert response.status_code == 200

@@ -30,3 +30,20 @@ def test_security_headers_present_on_every_response():
     assert response.headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["X-Frame-Options"] == "DENY"
+
+
+def test_cors_header_present_on_unhandled_exception(api_headers):
+    # A handler registered for the bare Exception class runs outside
+    # CORSMiddleware too (same quirk as security headers, above) — without
+    # this, a real server error looks like an opaque CORS failure to a
+    # browser caller instead of the intended JSON error body.
+    app.dependency_overrides[get_db] = _broken_db
+    try:
+        response = no_raise_client.get(
+            "/v1/routes", headers={**api_headers, "Origin": "https://example.com"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert response.status_code == 500
+    assert response.headers["Access-Control-Allow-Origin"] == "*"

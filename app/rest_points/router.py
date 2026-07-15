@@ -8,7 +8,7 @@ from app.rest_points.service import get_rest_point, list_rest_points
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
 from app.shared.middleware import api_scope, default_limit, limiter
-from app.shared.openapi import DETAIL_RESPONSES, LIST_RESPONSES
+from app.shared.openapi import LIST_RESPONSES, detail_responses
 
 router = APIRouter(
     prefix="/rest-points", tags=["rest-points"], dependencies=[Depends(verify_api_key)]
@@ -38,7 +38,7 @@ def list_rest_points_endpoint(
     response_model=RestPointFeature,
     summary="Get a rest point by id",
     description="Single rest point as a GeoJSON Feature.",
-    responses=DETAIL_RESPONSES,
+    responses=detail_responses("Rest point not found"),
 )
 @limiter.shared_limit(default_limit, api_scope)
 def get_rest_point_endpoint(

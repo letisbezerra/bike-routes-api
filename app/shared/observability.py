@@ -12,13 +12,15 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app.shared.config import APP_NAME
+
 _TEMPO_OTLP_ENDPOINT = "localhost:4317"
 
 
 def setup_observability(app: FastAPI) -> None:
     Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
-    provider = TracerProvider(resource=Resource.create({SERVICE_NAME: "bike-routes-api"}))
+    provider = TracerProvider(resource=Resource.create({SERVICE_NAME: APP_NAME}))
     # insecure=True: Tempo's OTLP receiver here has no TLS configured (local
     # demo only) — the exporter defaults to a secure channel and fails
     # silently in its background thread without this.
