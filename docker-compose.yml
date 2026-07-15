@@ -13,3 +13,37 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Local-only technical demo (README "Observability demo") — never part of
+  # the deployed environment. Opt-in: `docker compose --profile observability up -d`.
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: ["observability"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  tempo:
+    image: grafana/tempo:latest
+    profiles: ["observability"]
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - ./observability/tempo.yml:/etc/tempo.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC (app -> Tempo)
+      - "3200:3200"   # Tempo query API (used by Grafana, and directly for debugging)
+
+  grafana:
+    image: grafana/grafana:latest
+    profiles: ["observability"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    volumes:
+      - ./observability/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo

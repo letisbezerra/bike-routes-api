@@ -8,11 +8,19 @@ from app.parking.service import get_parking, list_parking
 from app.shared.auth import verify_api_key
 from app.shared.database import get_db
 from app.shared.middleware import api_scope, default_limit, limiter
+from app.shared.openapi import LIST_RESPONSES, detail_responses
 
 router = APIRouter(prefix="/parking", tags=["parking"], dependencies=[Depends(verify_api_key)])
 
 
-@router.get("", response_model=BikeParkingFeatureCollection)
+@router.get(
+    "",
+    response_model=BikeParkingFeatureCollection,
+    summary="List bike parking spots",
+    description="Paginated, bbox-filterable list of paraciclos/bicicletários. "
+    "Filter by `type`.",
+    responses=LIST_RESPONSES,
+)
 @limiter.shared_limit(default_limit, api_scope)
 def list_bike_parking(
     request: Request,
@@ -28,7 +36,13 @@ def list_bike_parking(
     )
 
 
-@router.get("/{parking_id}", response_model=BikeParkingFeature)
+@router.get(
+    "/{parking_id}",
+    response_model=BikeParkingFeature,
+    summary="Get a bike parking spot by id",
+    description="Single bike parking spot as a GeoJSON Feature.",
+    responses=detail_responses("Bike parking not found"),
+)
 @limiter.shared_limit(default_limit, api_scope)
 def get_bike_parking(
     request: Request, parking_id: int, session: Session = Depends(get_db)
