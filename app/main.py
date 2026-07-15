@@ -16,7 +16,22 @@ from app.stations.router import router as stations_router
 # "Sentry catches unhandled exceptions... second priority", distinct from
 # the local-only tracing/metrics demo in app/shared/observability.py). A
 # no-op when settings.sentry_dsn is unset/None.
-sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
+#
+# include_local_variables=False: Sentry's default event-scrubber only
+# redacts sensitively-named keys at the top level of each frame's locals —
+# it doesn't recurse into nested dicts, doesn't touch a raw ASGI scope's
+# header byte-tuples, and can't catch a secret baked into another object's
+# repr() (e.g. verify_api_key's x_api_key parameter surviving inside
+# Starlette's functools.partial(...) repr in the run_in_threadpool frame).
+# Verified live: with local-variable capture on, a real X-API-Key value
+# reached the Sentry event ~28 times through those paths despite the
+# key-name scrubber. Turning off local-variable capture entirely removes
+# all of them at once, rather than trying to enumerate every leak path.
+sentry_sdk.init(
+    dsn=settings.sentry_dsn,
+    environment=settings.environment,
+    include_local_variables=False,
+)
 
 app = FastAPI(
     title=APP_NAME,
