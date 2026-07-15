@@ -3,7 +3,13 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from app.shared.config import settings
 
-engine = create_engine(settings.database_url)
+# pool_pre_ping: Neon suspends/recycles idle connections on its side without
+# telling this pool — the next checkout can hand out a connection the server
+# already closed, surfacing as psycopg.OperationalError ("SSL connection has
+# been closed unexpectedly") on the first query. Verified live in production
+# via Sentry. pre_ping tests each connection with a cheap SELECT 1 before
+# use and transparently reopens it if dead, so the caller never sees it.
+engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
