@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # `name`. Shared by app/main.py (FastAPI title) and
 # app/shared/observability.py (trace SERVICE_NAME) so a rename can't leave
 # one of them stale.
-APP_NAME = "bike-routes-api"
+APP_NAME = "BikesAPI"
 
 
 class Settings(BaseSettings):
