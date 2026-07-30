@@ -31,3 +31,10 @@ def test_get_leisure_route_by_id_404_for_missing_id(api_headers):
     response = client.get("/v1/leisure-routes/10000000", headers=api_headers)
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+def test_list_leisure_routes_without_bbox_reports_clipped_false(api_headers):
+    response = client.get("/v1/leisure-routes", headers=api_headers)
+    body = response.json()
+    assert len(body["features"]) == 3
+    assert all(feature["clipped"] is False for feature in body["features"])

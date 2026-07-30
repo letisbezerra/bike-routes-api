@@ -1,5 +1,6 @@
 from math import ceil
 
+from geoalchemy2.types import WKBElement
 from sqlalchemy.orm import Session
 
 from app.routes.models import BikeRoute, RouteCategory
@@ -9,9 +10,13 @@ from app.shared.geojson import to_geojson_geometry
 from app.shared.schemas import PaginationMeta
 
 
-def _to_feature(route: BikeRoute) -> BikeRouteFeature:
+def _to_feature(
+    route: BikeRoute, clipped_geometry: WKBElement | None = None, is_clipped: bool = False
+) -> BikeRouteFeature:
+    geometry = clipped_geometry if clipped_geometry is not None else route.geometry
     return BikeRouteFeature(
-        geometry=to_geojson_geometry(route.geometry),
+        geometry=to_geojson_geometry(geometry),
+        clipped=is_clipped,
         properties=BikeRouteProperties.model_validate(route),
     )
 
@@ -35,7 +40,10 @@ def list_routes(
     )
     total_pages = ceil(total / page_size)
     return BikeRouteFeatureCollection(
-        features=[_to_feature(row) for row in rows],
+        features=[
+            _to_feature(route, clipped_geometry, is_clipped)
+            for route, clipped_geometry, is_clipped in rows
+        ],
         meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
     )
 

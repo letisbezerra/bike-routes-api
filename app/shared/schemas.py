@@ -17,6 +17,7 @@ class PaginationMeta(BaseModel):
 class Feature(BaseModel, Generic[PropertiesT]):
     type: Literal["Feature"] = "Feature"
     geometry: dict
+    clipped: bool = False
     properties: PropertiesT
 
 
