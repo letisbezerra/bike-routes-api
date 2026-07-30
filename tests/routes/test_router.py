@@ -40,3 +40,20 @@ def test_get_route_by_id_404_for_missing_id(api_headers):
     response = client.get("/v1/routes/10000000", headers=api_headers)
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+def test_list_routes_without_bbox_reports_clipped_false(api_headers):
+    response = client.get("/v1/routes", headers=api_headers, params={"page_size": 5})
+    body = response.json()
+    assert len(body["features"]) == 5
+    assert all(feature["clipped"] is False for feature in body["features"])
+
+
+def test_list_routes_with_bbox_includes_clipped_field(api_headers):
+    response = client.get(
+        "/v1/routes", headers=api_headers, params={"bbox": "-38.53,-3.75,-38.52,-3.74"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["features"]) > 0
+    assert all("clipped" in feature for feature in body["features"])
