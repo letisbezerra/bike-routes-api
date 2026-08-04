@@ -87,7 +87,7 @@ Applies directly:
 - Filters (`neighborhood`, `category`, bounding box) and versioning (`/v1`)
 - `GET /health` — unauthenticated, unrated liveness check (needed for free-tier hosts that spin down on inactivity)
 - Auto-generated OpenAPI docs
-- Consistent error shape (`{"error": {"code": ..., "message": ...}}`)
+- Consistent error shape (`{"error": {"code": ..., "message": ...}}`), plus an optional `hint` field (`{"error": {"code": ..., "message": ..., "hint": ...}}`) on error types where a concrete example or next step is genuinely actionable — `401`/`404`/`429` and some `422` cases today, not every error type; omitted entirely (not `null`) when there's nothing useful to add
 - Layered structure (routers/services/repositories/models/schemas), no logic in endpoints
 - Automated tests (unit + integration)
 - One naming convention for all fields (`snake_case`) — the raw source files mix conventions, the API schema doesn't
