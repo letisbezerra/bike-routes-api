@@ -12,6 +12,7 @@ from app.shared.config import APP_NAME, settings
 from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
 from app.stations.router import router as stations_router
+from app.support_points.router import router as support_points_router
 
 # Error monitoring only — no tracing/profiling/PII (docs/ARCHITECTURE.md:
 # "Sentry catches unhandled exceptions... second priority", distinct from
@@ -72,6 +73,11 @@ app = FastAPI(
         {"name": "stations", "description": "Bicicletar bike-share stations."},
         {"name": "rest-points", "description": "Rest points along bike routes."},
         {"name": "leisure-routes", "description": "Leisure cycling routes."},
+        {
+            "name": "support-points",
+            "description": "Combined view of bike parking, bike-share stations, and rest "
+            "points — one bbox-filtered call instead of three.",
+        },
     ],
 )
 
@@ -130,5 +136,6 @@ v1.include_router(parking_router)
 v1.include_router(stations_router)
 v1.include_router(rest_points_router)
 v1.include_router(leisure_routes_router)
+v1.include_router(support_points_router)
 
 app.include_router(v1)
