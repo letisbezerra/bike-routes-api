@@ -1,0 +1,93 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #0f172a;
+  color: white;
+}
+
+header h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+#search-button {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 4px;
+  background: #2563eb;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+#search-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#status {
+  font-size: 0.85rem;
+}
+
+#status.status-error {
+  color: #fca5a5;
+}
+
+#stale-hint {
+  font-size: 0.85rem;
+  color: #fbbf24;
+  display: none;
+}
+
+#stale-hint.visible {
+  display: inline;
+}
+
+#layer-toggles {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0.4rem 1rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
+#layer-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+#map {
+  flex: 1 1 auto;
+}
+
+footer {
+  flex: 0 0 auto;
+  padding: 0.4rem 1rem;
+  font-size: 0.75rem;
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+footer a {
+  color: #93c5fd;
+}
