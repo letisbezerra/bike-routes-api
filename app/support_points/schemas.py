@@ -29,8 +29,18 @@ SupportPointProperties = Annotated[
     Field(discriminator="resource_type"),
 ]
 
-SupportPointFeature = Feature[SupportPointProperties]
-SupportPointFeatureCollection = FeatureCollection[SupportPointProperties]
+
+class SupportPointFeature(Feature[SupportPointProperties]):
+    pass
+
+
+class SupportPointFeatureCollection(FeatureCollection[SupportPointProperties]):
+    # Overrides the inherited `list[Feature[PropertiesT]]` so the OpenAPI
+    # schema names this after SupportPointFeature — otherwise Pydantic
+    # resolves the generic inline and the item type gets an unreadable
+    # auto-generated name in Swagger, even though the collection itself
+    # is named.
+    features: list[SupportPointFeature]
 
 
 class SupportPointQuery(ListQuery):
