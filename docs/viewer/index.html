@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bike Routes API — Mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>Bike Routes API — Mapa</h1>
+  <button id="search-button">Buscar nesta área</button>
+  <span id="status"></span>
+  <span id="stale-hint">Mapa mudou — clique Buscar para atualizar.</span>
+</header>
+<div id="layer-toggles">
+  <label><input type="checkbox" data-layer="routes" checked /> Rotas</label>
+  <label><input type="checkbox" data-layer="leisure_routes" checked /> Rotas de lazer</label>
+  <label><input type="checkbox" data-layer="parking" checked /> Estacionamento</label>
+  <label><input type="checkbox" data-layer="station" checked /> Estações</label>
+  <label><input type="checkbox" data-layer="rest_point" checked /> Pontos de descanso</label>
+</div>
+<div id="map"></div>
+<footer>
+  Fonte: AMC/Prefeitura de Fortaleza · Dados de mapa ©
+  <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+  contributors ·
+  <a href="https://bike-routes-api.onrender.com/docs" target="_blank" rel="noopener">API docs</a>
+</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
