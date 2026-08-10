@@ -98,7 +98,9 @@ def test_list_support_points_paginates_across_the_merged_sorted_list(support_poi
     assert [f.properties.resource_type for f in second_page.features] == ["rest_point"]
 
 
-def test_list_support_points_round_robin_prevents_one_type_starving_the_page(support_point_fixtures):
+def test_list_support_points_round_robin_prevents_one_type_starving_the_page(
+    support_point_fixtures,
+):
     """Regression test for the pagination-fairness bug: found live when a
     large-bbox query returned a page 1 that was 100% parking, because the
     original ordering was (resource_type, id) and "parking" sorts first

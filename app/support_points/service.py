@@ -13,8 +13,8 @@ from app.support_points.schemas import (
     SupportPointFeatureCollection,
     SupportPointParkingProperties,
     SupportPointRestPointProperties,
-    SupportPointStationProperties,
     SupportPointsPaginationMeta,
+    SupportPointStationProperties,
 )
 
 BboxTuple = tuple[float, float, float, float] | None
@@ -119,7 +119,9 @@ def list_support_points(
     # across requests (a client paginating page-by-page never sees a row
     # shift), just no longer structurally unfair to the two smaller types.
     # Decided in SQL: only this page's ids ever leave the database.
-    type_order_case = case(*[(id_union.c.resource_type == rt, order) for rt, order in _TYPE_ORDER.items()])
+    type_order_case = case(
+        *[(id_union.c.resource_type == rt, order) for rt, order in _TYPE_ORDER.items()]
+    )
     page_ids = session.execute(
         select(id_union.c.resource_type, id_union.c.id)
         .order_by(id_union.c.type_rank, type_order_case)
@@ -136,6 +138,10 @@ def list_support_points(
     return SupportPointFeatureCollection(
         features=features,
         meta=SupportPointsPaginationMeta(
-            page=page, page_size=page_size, total=total, total_pages=total_pages, total_by_type=total_by_type
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=total_pages,
+            total_by_type=total_by_type,
         ),
     )
