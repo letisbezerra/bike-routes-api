@@ -11,6 +11,7 @@ def test_list_support_points_returns_mixed_feature_collection(api_headers):
     body = response.json()
     assert body["type"] == "FeatureCollection"
     assert len(body["features"]) > 0
+    assert set(body["meta"]["total_by_type"].keys()) == {"parking", "station", "rest_point"}
     for feature in body["features"]:
         resource_type = feature["properties"]["resource_type"]
         assert resource_type in ("parking", "station", "rest_point")
