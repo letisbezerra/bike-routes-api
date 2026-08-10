@@ -104,13 +104,7 @@ function clearLayers() {
   Object.values(layerGroups).forEach((group) => group.clearLayers());
 }
 
-// /v1/routes and /v1/leisure-routes each have their own real pagination
-// meta; /v1/support-points is one combined endpoint covering parking +
-// station + rest_point with a single shared total, so there's no true
-// per-subtype total to show for those three — the legend format reflects
-// that honestly instead of showing a precise-looking number it doesn't have.
-const EXACT_TOTAL_TYPES = new Set(["routes", "leisure_routes"]);
-let lastMeta = {};
+let lastTotals = {};
 
 // docs/specs/09-web-viewer.md's legend — one live count per layer,
 // reflecting what's actually visible on the map right now. Refreshed
@@ -118,31 +112,22 @@ let lastMeta = {};
 // and on every checkbox toggle — a layer hidden via its checkbox shows 0,
 // not the count of what's loaded but not displayed (confirmed with the
 // developer after live testing showed a hidden layer still listing a
-// nonzero count as confusing). When more data exists than was fetched:
-// "N de M" where the real total is known, "N+" where only the rendered
-// count is known (see EXACT_TOTAL_TYPES above) — only shown while the
-// layer is actually visible. "N+" specifically only when N > 0: for a
-// shared-meta type, "the combined response was capped" doesn't mean THIS
-// subtype has more hiding (the cap may have been consumed entirely by a
-// different subtype) — "0+" would claim knowledge of more zero-rendered
-// items existing that we don't actually have.
+// nonzero count as confusing). "N de M" appears whenever more items exist
+// than were rendered — every type now has a real total (routes/
+// leisure_routes from their own endpoint's meta.total, the 3 support-point
+// types from /v1/support-points' meta.total_by_type, added by the
+// fix/support-points-pagination branch), so there's no "N+" fallback for
+// an unknown total anymore.
 function updateLegendCounts() {
   document.querySelectorAll("[data-count-for]").forEach((el) => {
     const type = el.dataset.countFor;
     const group = layerGroups[type];
     const visible = map.hasLayer(group);
     const rendered = visible ? group.getLayers().length : 0;
-    const meta = lastMeta[type];
+    const total = lastTotals[type];
 
-    if (!visible || !meta || meta.total <= meta.page_size) {
-      el.textContent = rendered;
-    } else if (EXACT_TOTAL_TYPES.has(type)) {
-      el.textContent = `${rendered} de ${meta.total}`;
-    } else if (rendered > 0) {
-      el.textContent = `${rendered}+`;
-    } else {
-      el.textContent = rendered;
-    }
+    el.textContent =
+      visible && total !== undefined && rendered < total ? `${rendered} de ${total}` : rendered;
   });
 }
 
@@ -232,12 +217,12 @@ async function searchCurrentArea() {
     renderLineCollection(leisureRoutes, LEISURE_ROUTE_STYLE, layerGroups.leisure_routes);
     renderSupportPoints(supportPoints);
 
-    lastMeta = {
-      routes: routes.meta,
-      leisure_routes: leisureRoutes.meta,
-      parking: supportPoints.meta,
-      station: supportPoints.meta,
-      rest_point: supportPoints.meta,
+    lastTotals = {
+      routes: routes.meta.total,
+      leisure_routes: leisureRoutes.meta.total,
+      parking: supportPoints.meta.total_by_type.parking,
+      station: supportPoints.meta.total_by_type.station,
+      rest_point: supportPoints.meta.total_by_type.rest_point,
     };
     updateLegendCounts();
 
