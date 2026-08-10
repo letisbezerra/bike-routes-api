@@ -1,7 +1,68 @@
+/* Tokens read directly from ~/Documents/Projetos-Pessoal/DocsDisgn-BikesAPI/
+   DesignSite/BikesAPI Map.dc.html — not approximated. Scoped to :root/<html>,
+   not <body>, so <html>'s own background stays in sync with the theme too
+   (custom properties don't cascade upward from a descendant). */
+:root {
+  --bg-page: oklch(0.985 0.004 255);
+  --bg-header: oklch(0.16 0.02 255);
+  --bg-sidebar: oklch(0.985 0.004 255);
+  --bg-input: oklch(0.98 0.003 255);
+  --border-sidebar: oklch(0.9 0.005 255);
+  --divider-sidebar: oklch(0.9 0.005 255);
+  --divider-header: oklch(0.4 0.02 255);
+  --text-header-title: oklch(0.985 0.004 255);
+  --text-header-subtitle: oklch(0.75 0.01 255);
+  --text-header-status: oklch(0.65 0.008 255);
+  --text-section-title: oklch(0.5 0.01 255);
+  --text-legend-label: oklch(0.2 0.01 255);
+  --text-legend-count: oklch(0.55 0.008 255);
+  --text-category: oklch(0.3 0.01 255);
+  --text-input: oklch(0.25 0.01 255);
+  --border-input: oklch(0.85 0.006 255);
+  --accent: oklch(0.55 0.13 215);
+  --accent-header-border: oklch(0.6 0.13 215);
+  --accent-header-text: oklch(0.75 0.1 215);
+  --status-error: oklch(0.55 0.18 25);
+  --stale-hint: oklch(0.55 0.14 75);
+  --leaflet-zoom-text: oklch(0.16 0.02 255);
+  --leaflet-zoom-border: oklch(0.85 0.006 255);
+}
+
+:root[data-theme="dark"] {
+  --bg-page: oklch(0.16 0.02 255);
+  --bg-header: oklch(0.12 0.015 255);
+  --bg-sidebar: oklch(0.18 0.015 255);
+  --bg-input: oklch(0.14 0.015 255);
+  --border-sidebar: oklch(0.26 0.015 255);
+  --divider-sidebar: oklch(0.26 0.015 255);
+  --divider-header: oklch(0.3 0.02 255);
+  --text-header-title: oklch(0.985 0.004 255);
+  --text-header-subtitle: oklch(0.65 0.01 255);
+  --text-header-status: oklch(0.55 0.008 255);
+  --text-section-title: oklch(0.6 0.008 255);
+  --text-legend-label: oklch(0.92 0.004 255);
+  --text-legend-count: oklch(0.55 0.008 255);
+  --text-category: oklch(0.8 0.006 255);
+  --text-input: oklch(0.85 0.006 255);
+  --border-input: oklch(0.3 0.015 255);
+  --accent: oklch(0.6 0.13 215);
+  --accent-header-border: oklch(0.6 0.13 215);
+  --accent-header-text: oklch(0.75 0.1 215);
+  --status-error: oklch(0.7 0.17 25);
+  --stale-hint: oklch(0.75 0.14 75);
+  --leaflet-zoom-bg: oklch(0.22 0.015 255);
+  --leaflet-zoom-text: oklch(0.95 0.004 255);
+  --leaflet-zoom-border: oklch(0.32 0.015 255);
+  --leaflet-attribution-bg: oklch(0.22 0.015 255 / 0.8);
+  --leaflet-attribution-text: oklch(0.7 0.006 255);
+  --leaflet-attribution-link: oklch(0.75 0.08 215);
+}
+
 html, body {
   margin: 0;
   height: 100%;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--bg-page);
 }
 
 body {
@@ -10,84 +71,324 @@ body {
   height: 100vh;
 }
 
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: oklch(0.42 0.11 215);
+}
+
+/* Header background is dark in both themes (Map.dc.html draws it the same
+   way in both the light and dark panel), so header-scoped colors below are
+   theme-invariant on purpose — only --bg-header itself changes shade. */
 header {
   flex: 0 0 auto;
+  height: 64px;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: #0f172a;
-  color: white;
+  gap: 20px;
+  padding: 0 24px;
+  background: var(--bg-header);
+  color: var(--text-header-title);
 }
 
-header h1 {
-  font-size: 1.1rem;
-  margin: 0;
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-#search-button {
-  padding: 0.4rem 0.9rem;
-  border: none;
-  border-radius: 4px;
-  background: #2563eb;
-  color: white;
-  font-size: 0.9rem;
+.logo-mark rect {
+  fill: var(--bg-header);
+}
+
+.logo-title {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.header-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--divider-header);
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: var(--text-header-subtitle);
+}
+
+.header-doclink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--accent-header-text);
+  text-decoration: none;
+}
+
+.header-doclink:hover {
+  text-decoration: underline;
+}
+
+.header-doclink svg {
+  width: 16px;
+  height: 16px;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+#search-button,
+#theme-toggle {
+  background: transparent;
+  border: 1px solid var(--accent-header-border);
+  color: var(--accent-header-text);
+  font-family: inherit;
+  border-radius: 5px;
   cursor: pointer;
 }
 
+#search-button {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
 #search-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 
+#theme-toggle {
+  line-height: 1;
+  padding: 7px 10px;
+}
+
+/* docs/DESIGN-SYSTEM.md's icon rule: geometric SVG, square joints, one
+   color — never emoji/illustration. Sized to sit flush in the button. */
+#theme-toggle svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+#search-button:hover:not(:disabled),
+#theme-toggle:hover {
+  background: var(--accent-header-border);
+  color: var(--bg-header);
+}
+
+.logo,
+.header-divider,
+.header-subtitle,
+.header-doclink,
+#search-button,
+#theme-toggle {
+  flex-shrink: 0;
+}
+
+/* `#status` is a short fixed message today ("Busca concluída", an error
+   string, or empty), but truncates defensively regardless — nothing
+   guarantees it stays short forever, and a wrapped/overflowing status
+   previously broke the header layout (found via live testing). `min-width:
+   0` overrides flexbox's default `min-width: auto`, which otherwise
+   refuses to shrink a flex item below its content's intrinsic width. */
 #status {
-  font-size: 0.85rem;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-header-status);
 }
 
 #status.status-error {
-  color: #fca5a5;
+  color: var(--status-error);
 }
 
 #stale-hint {
-  font-size: 0.85rem;
-  color: #fbbf24;
+  font-size: 12px;
+  color: var(--stale-hint);
   display: none;
+  white-space: nowrap;
 }
 
 #stale-hint.visible {
   display: inline;
 }
 
-#layer-toggles {
-  flex: 0 0 auto;
+.layout {
+  flex: 1 1 auto;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  padding: 0.4rem 1rem;
-  background: #1e293b;
-  color: #e2e8f0;
-  font-size: 0.85rem;
+  min-height: 0;
 }
 
-#layer-toggles label {
+#sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-sidebar);
+  padding: 22px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-section-title);
+  margin-bottom: 12px;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--divider-sidebar);
+}
+
+/* Legend row order matches Map.dc.html exactly: swatch, then a stacked
+   label+count block, then the checkbox last. */
+.legend-row {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 10px;
+  padding: 8px 0;
   cursor: pointer;
+}
+
+/* .legend-swatch is a fixed-size frame (separate element from the mark
+   inside it) so every row's label starts at the same x position — a dot
+   (12px) and a line (18px) can't both set `width` on the same element
+   without one overriding the other at equal specificity. */
+.legend-swatch {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legend-swatch-line {
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-swatch-dashed {
+  width: 18px;
+  height: 0;
+  border-top-width: 3px;
+  border-top-style: dashed;
+}
+
+.legend-swatch-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-info {
+  flex: 1;
+}
+
+.legend-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-legend-label);
+}
+
+.legend-count {
+  font-size: 11px;
+  color: var(--text-legend-count);
+}
+
+.legend-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+
+/* Tipologia/Bairro render exactly like the working "Camadas" controls —
+   normal weight/color, no disabled/not-allowed treatment. They're inert
+   because no JS listener is attached (decision 15), not because they look
+   broken. */
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.category-list label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text-category);
+}
+
+.category-list input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+#neighborhood-search {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-input);
+  color: var(--text-input);
 }
 
 #map {
   flex: 1 1 auto;
+  min-width: 0;
+}
+
+:root[data-theme="dark"] .leaflet-control-zoom a {
+  background: var(--leaflet-zoom-bg);
+  color: var(--leaflet-zoom-text);
+  border-color: var(--leaflet-zoom-border) !important;
+}
+
+.leaflet-control-zoom a {
+  color: var(--leaflet-zoom-text);
+  border-color: var(--leaflet-zoom-border) !important;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+:root[data-theme="dark"] .leaflet-control-attribution {
+  background: var(--leaflet-attribution-bg);
+  color: var(--leaflet-attribution-text);
+}
+
+:root[data-theme="dark"] .leaflet-control-attribution a {
+  color: var(--leaflet-attribution-link);
 }
 
 footer {
   flex: 0 0 auto;
   padding: 0.4rem 1rem;
   font-size: 0.75rem;
-  background: #0f172a;
-  color: #94a3b8;
+  background: var(--bg-header);
+  color: var(--text-header-status);
+  border-top: 1px solid var(--divider-header);
 }
 
 footer a {
-  color: #93c5fd;
+  color: var(--accent-header-text);
 }
