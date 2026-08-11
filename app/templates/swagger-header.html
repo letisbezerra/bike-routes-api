@@ -1,0 +1,61 @@
+<div
+  id="swagger-header"
+  style="display: flex; align-items: center; gap: 14px; padding: 0 40px; font-family: Inter, sans-serif;"
+>
+  <svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true">
+    <rect
+      x="2" y="2" width="44" height="44" rx="6"
+      fill="oklch(0.16 0.02 255)" stroke="oklch(0.6 0.13 215)" stroke-width="1.5"
+    ></rect>
+    <path
+      d="M15,33 L15,15 L33,15" fill="none" stroke="oklch(0.7 0.1 215)"
+      stroke-width="3.2" stroke-linecap="square" stroke-linejoin="miter"
+    ></path>
+    <circle cx="15" cy="33" r="3.6" fill="oklch(0.7 0.1 215)"></circle>
+    <circle
+      cx="33" cy="15" r="3.6"
+      fill="oklch(0.16 0.02 255)" stroke="oklch(0.7 0.1 215)" stroke-width="3.2"
+    ></circle>
+  </svg>
+  <span style="font-size: 15px; font-weight: 650; color: oklch(0.985 0.004 255); letter-spacing: -0.01em;">
+    BikesAPI
+  </span>
+  <span style="width: 1px; height: 18px; background: oklch(0.35 0.02 255);"></span>
+  <span style="font-size: 13px; color: oklch(0.7 0.01 255);">Documentation</span>
+  <span style="flex: 1;"></span>
+  <button
+    id="swagger-theme-toggle"
+    aria-label="Alternar tema claro/escuro"
+    style="background: transparent; border: 1px solid oklch(0.6 0.13 215); color: oklch(0.75 0.1 215);
+           font-family: Inter, sans-serif; border-radius: 5px; cursor: pointer; line-height: 1; padding: 7px 10px;"
+  >
+    <svg width="16" height="16" viewBox="0 0 20 20" style="display: block;">
+      <path d="M13.5 2.5a7.5 7.5 0 1 0 4 13 8.5 8.5 0 0 1-4-13z" fill="currentColor"></path>
+    </svg>
+  </button>
+</div>
+<script>
+  (function () {
+    // Same icon pair and swap rule as docs/viewer/app.js: shown icon is
+    // the theme a click switches TO (moon while light, sun while dark).
+    var MOON_ICON =
+      '<svg width="16" height="16" viewBox="0 0 20 20" style="display: block;" aria-hidden="true">' +
+      '<path d="M13.5 2.5a7.5 7.5 0 1 0 4 13 8.5 8.5 0 0 1-4-13z" fill="currentColor"></path></svg>';
+    var SUN_ICON =
+      '<svg width="16" height="16" viewBox="0 0 20 20" style="display: block;" aria-hidden="true">' +
+      '<circle cx="10" cy="10" r="4" fill="currentColor"></circle>' +
+      '<g stroke="currentColor" stroke-width="1.6" stroke-linecap="square">' +
+      '<line x1="10" y1="1" x2="10" y2="3.5"></line><line x1="10" y1="16.5" x2="10" y2="19"></line>' +
+      '<line x1="1" y1="10" x2="3.5" y2="10"></line><line x1="16.5" y1="10" x2="19" y2="10"></line>' +
+      '<line x1="3.5" y1="3.5" x2="5.3" y2="5.3"></line><line x1="14.7" y1="14.7" x2="16.5" y2="16.5"></line>' +
+      '<line x1="3.5" y1="16.5" x2="5.3" y2="14.7"></line><line x1="14.7" y1="5.3" x2="16.5" y2="3.5"></line>' +
+      "</g></svg>";
+    var toggle = document.getElementById("swagger-theme-toggle");
+    toggle.addEventListener("click", function () {
+      document.documentElement.classList.toggle("dark-mode");
+      toggle.innerHTML = document.documentElement.classList.contains("dark-mode") ? SUN_ICON : MOON_ICON;
+    });
+  })();
+</script>
+<div id="swagger-ui">
+    </div>

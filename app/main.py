@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import sentry_sdk
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from app.leisure_routes.router import router as leisure_routes_router
@@ -55,6 +59,10 @@ app = FastAPI(
         "for a key."
     ),
     version="0.1.0",
+    # Default /docs replaced below with a themed one (docs/specs/
+    # 10-swagger-ui-styling.md) — disabled here so FastAPI doesn't also
+    # register its own at the same path.
+    docs_url=None,
     contact={
         "name": "Issues & key requests",
         "url": "https://github.com/letisbezerra/bike-routes-api/issues",
@@ -96,12 +104,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 
 @app.get("/", include_in_schema=False)
 def root():
     """Bare-domain visitors (e.g. from the README/portfolio link) land on the
     docs instead of a raw 404 — the API itself has no root resource."""
     return RedirectResponse("/docs")
+
+
+# BikesAPI header + light/dark toggle for the real Swagger UI (docs/specs/
+# 10-swagger-ui-styling.md). get_swagger_ui_html() has no hook to inject
+# extra markup, so this replaces its single, always-empty
+# `<div id="swagger-ui">` placeholder with the header immediately followed
+# by that same div — every byte injected is this fixed file's content, no
+# request-derived input touches it. The toggle just flips `dark-mode` on
+# <html>, the same class swagger-ui.css already keys its own dark rules on.
+_SWAGGER_HEADER = (
+    (Path(__file__).parent / "templates" / "swagger-header.html").read_text().rstrip()
+)
+
+
+_SWAGGER_CSS_PATH = Path(__file__).parent / "static" / "swagger-custom.css"
+
+
+@app.get("/docs", include_in_schema=False)
+def custom_swagger_ui():
+    # Cache-busted on the CSS file's own mtime — StaticFiles sets no
+    # explicit Cache-Control, so browsers were free to serve a stale copy
+    # after every edit, hiding real fixes behind an unprompted hard
+    # refresh. Recomputed per request (cheap stat call) so a running dev
+    # server always reflects the file as last saved, not as it was when
+    # the process started.
+    css_version = int(_SWAGGER_CSS_PATH.stat().st_mtime)
+    response = get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{APP_NAME} — Documentation",
+        swagger_css_url=f"/static/swagger-custom.css?v={css_version}",
+    )
+    html = response.body.decode("utf-8").replace(
+        '<div id="swagger-ui">\n    </div>', _SWAGGER_HEADER
+    )
+    return HTMLResponse(html)
 
 
 @app.get(
