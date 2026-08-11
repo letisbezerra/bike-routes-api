@@ -254,6 +254,21 @@ header {
   background: var(--divider-sidebar);
 }
 
+/* docs/specs/09-web-viewer.md decision 19 (revised) — states a filter's
+   scope permanently, next to the control itself, instead of reacting
+   dynamically per-layer after the fact (the earlier gray/hide-on-filter
+   approach read as broken/confusing during live testing, since it only
+   explained itself after the user had already applied the filter and
+   noticed something didn't respond). Negative top margin pulls it up
+   under .sidebar-section-title without changing that shared rule (also
+   used by "Camadas", which has no hint). */
+.filter-scope-hint {
+  font-size: 11px;
+  color: var(--text-legend-count);
+  margin-top: -8px;
+  margin-bottom: 10px;
+}
+
 /* Legend row order matches Map.dc.html exactly: swatch, then a stacked
    label+count block, then the checkbox last. */
 .legend-row {

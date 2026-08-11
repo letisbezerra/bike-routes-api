@@ -92,16 +92,18 @@
     <div class="sidebar-divider"></div>
     <div>
       <div class="sidebar-section-title">Tipologia — ciclovias</div>
-      <div class="category-list">
-        <label><input type="checkbox" checked /> Ciclofaixa</label>
-        <label><input type="checkbox" checked /> Ciclovia</label>
-        <label><input type="checkbox" checked /> Ciclorrota</label>
-        <label><input type="checkbox" checked /> Passeio compartilhado</label>
+      <div class="filter-scope-hint">Filtra apenas a camada Rotas.</div>
+      <div class="category-list" id="tipologia-filter">
+        <label><input type="checkbox" data-category="ciclofaixa" checked /> Ciclofaixa</label>
+        <label><input type="checkbox" data-category="ciclovia" checked /> Ciclovia</label>
+        <label><input type="checkbox" data-category="ciclorrota" checked /> Ciclorrota</label>
+        <label><input type="checkbox" data-category="passeio_compartilhado" checked /> Passeio compartilhado</label>
       </div>
     </div>
     <div class="sidebar-divider"></div>
     <div>
       <div class="sidebar-section-title">Bairro</div>
+      <div class="filter-scope-hint">Filtra as camadas Rotas e Estações.</div>
       <input type="text" id="neighborhood-search" placeholder="Buscar bairro..." />
     </div>
   </aside>
