@@ -332,10 +332,10 @@ header {
   accent-color: var(--accent);
 }
 
-/* Tipologia/Bairro render exactly like the working "Camadas" controls —
-   normal weight/color, no disabled/not-allowed treatment. They're inert
-   because no JS listener is attached (decision 15), not because they look
-   broken. */
+/* Tipologia/Bairro render like the working "Camadas" controls — normal
+   weight/color, no disabled/not-allowed treatment. Real filtering since
+   decision 16 (feature/viewer-real-filters); each Tipologia row also gets
+   a legend-swatch showing its route color (decision, this branch). */
 .category-list {
   display: flex;
   flex-direction: column;
@@ -369,6 +369,15 @@ header {
 #map {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* CARTO Dark Matter tiles read as too dark on their own (found live) —
+   lightened with a CSS filter on the tile pane rather than switching tile
+   providers, so it's still the same free, no-API-key CARTO source. Scoped
+   to .leaflet-tile-pane specifically, not the whole map, so markers/lines/
+   controls keep their real colors. */
+:root[data-theme="dark"] .leaflet-tile-pane {
+  filter: brightness(1.4) contrast(0.92);
 }
 
 :root[data-theme="dark"] .leaflet-control-zoom a {
