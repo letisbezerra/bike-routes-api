@@ -90,6 +90,8 @@ const layerGroups = {
 const searchButton = document.getElementById("search-button");
 const statusEl = document.getElementById("status");
 const staleHintEl = document.getElementById("stale-hint");
+const neighborhoodInput = document.getElementById("neighborhood-search");
+const tipologiaCheckboxes = document.querySelectorAll("#tipologia-filter input[type=checkbox]");
 
 let requestGeneration = 0;
 let lastSearchedBounds = null;
@@ -106,6 +108,14 @@ function clearLayers() {
 
 let lastTotals = {};
 
+function checkedCategories() {
+  return new Set(
+    Array.from(tipologiaCheckboxes)
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.dataset.category)
+  );
+}
+
 // docs/specs/09-web-viewer.md's legend — one live count per layer,
 // reflecting what's actually visible on the map right now. Refreshed
 // after every render (including an empty one, so counts go back to 0)
@@ -117,7 +127,10 @@ let lastTotals = {};
 // leisure_routes from their own endpoint's meta.total, the 3 support-point
 // types from /v1/support-points' meta.total_by_type, added by the
 // fix/support-points-pagination branch), so there's no "N+" fallback for
-// an unknown total anymore.
+// an unknown total anymore. docs/specs/09's decision 19 (revised) —
+// Tipologia/Bairro's scope is stated once as a fixed hint next to each
+// filter, not tracked per-layer here; a layer they don't touch just keeps
+// showing its normal count, same as before either filter existed.
 function updateLegendCounts() {
   document.querySelectorAll("[data-count-for]").forEach((el) => {
     const type = el.dataset.countFor;
@@ -129,6 +142,60 @@ function updateLegendCounts() {
     el.textContent =
       visible && total !== undefined && rendered < total ? `${rendered} de ${total}` : rendered;
   });
+}
+
+// docs/specs/09-web-viewer.md decision 16 — Tipologia/Bairro filter
+// client-side, on data already fetched for the current search area, same
+// spirit as the layer-visibility checkboxes above (one fetch, then
+// interact freely). `allLayers` is the master list of every rendered
+// route/station layer, independent of which ones currently sit inside
+// their layerGroup — re-snapshotted after every search so a new area's
+// results go through the same filter state (decision 18: filters persist
+// across searches).
+let allLayers = { routes: [], station: [] };
+
+// Diacritic-insensitive: Brazilian neighborhood names carry accents
+// ("Rodolfo Teófilo") that most people don't bother typing — a plain
+// substring match on the raw strings silently found nothing for a
+// correctly-spelled-but-unaccented query, reading as "0 results" for a
+// neighborhood that obviously has data. NFD-decomposes each string (e.g.
+// "ó" → "o" + a separate combining-accent codepoint) then strips the
+// combining marks before comparing, so both sides normalize the same way
+// regardless of which one has accents typed.
+function foldAccents(text) {
+  return text.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function matchesNeighborhood(neighborhoods, text) {
+  const needle = foldAccents(text.trim().toLowerCase());
+  if (!needle) return true;
+  return neighborhoods.some((n) => n && foldAccents(n.toLowerCase()).includes(needle));
+}
+
+function syncMembership(group, layer, shouldBeIn) {
+  const isIn = group.hasLayer(layer);
+  if (shouldBeIn && !isIn) group.addLayer(layer);
+  if (!shouldBeIn && isIn) group.removeLayer(layer);
+}
+
+function applyFilters() {
+  const categories = checkedCategories();
+  const text = neighborhoodInput.value;
+
+  allLayers.routes.forEach((layer) => {
+    const matches =
+      categories.has(layer.feature.properties.category) &&
+      matchesNeighborhood(layer.feature.properties.neighborhoods, text);
+    syncMembership(layerGroups.routes, layer, matches);
+  });
+
+  allLayers.station.forEach((layer) => {
+    const neighborhood = layer.feature.properties.neighborhood;
+    const matches = matchesNeighborhood(neighborhood ? [neighborhood] : [], text);
+    syncMembership(layerGroups.station, layer, matches);
+  });
+
+  updateLegendCounts();
 }
 
 function boundsToBbox(bounds) {
@@ -162,7 +229,13 @@ async function fetchResource(path, bbox) {
 
 function renderLineCollection(collection, style, layerGroup) {
   if (!collection.features.length) return;
-  L.geoJSON(collection, { style }).addTo(layerGroup);
+  // Flattened onto layerGroup directly (one addLayer per feature), not
+  // .addTo(layerGroup) — that would nest the whole L.geoJSON FeatureGroup
+  // as a single child, so layerGroup.getLayers() returned one group
+  // lacking its own .feature instead of N individual feature layers,
+  // breaking decision 16's per-feature filtering (layer.feature was
+  // undefined). Same flattening renderSupportPoints already does below.
+  L.geoJSON(collection, { style }).eachLayer((layer) => layerGroup.addLayer(layer));
 }
 
 function popupContent(resourceType, name) {
@@ -224,7 +297,11 @@ async function searchCurrentArea() {
       station: supportPoints.meta.total_by_type.station,
       rest_point: supportPoints.meta.total_by_type.rest_point,
     };
-    updateLegendCounts();
+    allLayers = {
+      routes: layerGroups.routes.getLayers(),
+      station: layerGroups.station.getLayers(),
+    };
+    applyFilters();
 
     lastSearchedBounds = bounds;
     updateStaleHint();
@@ -262,3 +339,6 @@ document.querySelectorAll("#layer-legend input[type=checkbox]").forEach((checkbo
     setStatus("");
   });
 });
+
+tipologiaCheckboxes.forEach((checkbox) => checkbox.addEventListener("change", applyFilters));
+neighborhoodInput.addEventListener("input", applyFilters);
