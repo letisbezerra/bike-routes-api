@@ -1,0 +1,471 @@
+/* BikesAPI restyle of the real Swagger UI (docs/specs/10-swagger-ui-styling.md).
+   @import pulls in the exact base stylesheet FastAPI's default /docs would
+   otherwise load — everything below layers on top of it via declaration
+   order (same selector specificity as the base rules, so ours win),
+   instead of forking/self-hosting swagger-ui-dist. Tokens match
+   docs/DESIGN-SYSTEM.md; verb badge values match its "HTTP method badge
+   colors" table.
+
+   Every html.dark-mode-scoped rule below exists because swagger-ui.css
+   ships its own same-element dark override at equal-or-higher selector
+   specificity (verified against the real file, not assumed) — a plain
+   light-mode override alone gets silently beaten by Swagger UI's own dark
+   rule the moment html.dark-mode is toggled, confirmed live via a real
+   screenshot before this file reached its final form. */
+@import url("https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css");
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: oklch(0.985 0.004 255);
+}
+
+html.dark-mode body {
+  background: oklch(0.16 0.02 255);
+}
+
+/* Swagger UI's own URL-switcher bar — irrelevant to a single, fixed-spec
+   API (docs/specs/10-swagger-ui-styling.md decision 4). Our header below
+   takes its visual place. */
+.swagger-ui .topbar {
+  display: none;
+}
+
+/* Content column width/padding — exact values read from the mockup's own
+   source (padding: 0 48px; max-width: 1200px on both the title block and
+   the endpoint-list wrapper), not Swagger UI's own wider default
+   (max-width: 1460px, padding: 0 20px), which read as edge-to-edge and
+   cramped by comparison. */
+.swagger-ui .wrapper {
+  max-width: 1200px;
+  padding: 0 48px;
+  /* Centered in the viewport (developer's call, 2026-08-11 — overrides
+     the mockup's own left-flush layout) — everything except #swagger-header
+     (outside .wrapper, stays full-width) sits in this centered column. */
+  margin: 0 auto;
+}
+
+.swagger-ui .info {
+  margin: 40px 0 24px;
+}
+
+/* swagger-ui.css redeclares font-family: sans-serif on dozens of specific
+   descendants (.info p, .opblock-tag, .parameter__name, .btn, and more —
+   checked directly against the file, not guessed), each with higher
+   specificity than a plain .swagger-ui ancestor rule can beat without
+   !important. The universal selector + !important forces this project's
+   one standardized font (same stack as docs/viewer/style.css's html/body
+   rule — not a second, Swagger-only family) as the exception to the
+   normal cascade — justified because the alternative is re-declaring the
+   same override for every current and future selector the library ships. */
+.swagger-ui,
+.swagger-ui * {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+}
+
+/* Code/path context keeps Swagger UI's own generic `monospace` keyword —
+   not a second named font (no "SF Mono" or similar introduced), just the
+   browser's default monospace, same as this project's viewer never had to
+   override anywhere because it never renders code/paths. Declared after
+   the Inter rule above, same !important tier, so this narrower list wins
+   only where it matches. */
+.swagger-ui pre,
+.swagger-ui code,
+.swagger-ui kbd,
+.swagger-ui samp,
+.swagger-ui .model,
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .opblock-summary-method,
+.swagger-ui .opblock-summary-path,
+.swagger-ui .opblock-summary-operation-id,
+.swagger-ui table.headers td {
+  font-family: monospace !important;
+}
+
+#swagger-header {
+  height: 56px;
+  background: oklch(0.16 0.02 255);
+}
+
+html.dark-mode #swagger-header {
+  background: oklch(0.12 0.015 255);
+}
+
+#swagger-theme-toggle:hover {
+  background: oklch(0.6 0.13 215);
+  color: oklch(0.16 0.02 255);
+}
+
+/* Swagger UI's own .title small carries position:relative;top:-5px;
+   vertical-align:super (a superscript-style offset) — the mockup instead
+   centers the badges next to the title via flex, so they read as
+   noticeably misplaced/oddly sized next to each other until the title
+   itself becomes a flex row and the offset is cleared. */
+.swagger-ui .info .title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* The two badges are wrapped in a plain <span> (real Swagger UI DOM,
+   unstyled), which itself must become a flex row for its children to
+   align with each other and center against the title text — align-items
+   on .title alone only centers the span AS A WHOLE, not its own
+   contents. */
+.swagger-ui .info .title > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.swagger-ui .info .title small {
+  display: inline-flex;
+  align-items: center;
+  position: static;
+  top: auto;
+  vertical-align: baseline;
+  margin: 0;
+}
+
+.swagger-ui .info .title,
+.swagger-ui .info h1,
+.swagger-ui .info h2,
+.swagger-ui .info h3 {
+  color: oklch(0.16 0.02 255);
+}
+html.dark-mode .swagger-ui .info .title,
+html.dark-mode .swagger-ui .info h1,
+html.dark-mode .swagger-ui .info h2,
+html.dark-mode .swagger-ui .info h3 {
+  color: oklch(0.985 0.004 255);
+}
+
+/* Badge shape/size per docs/DESIGN-SYSTEM.md: 4px radius ("Small
+   badge/tag" in the Border radius table), 11px ("section label uppercase,
+   legend count" in the Typography scale) — not Swagger UI's own 57px
+   pill / 10px default. */
+.swagger-ui .info .title small {
+  background: oklch(0.5 0.005 255);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 650;
+}
+html.dark-mode .swagger-ui .info .title small {
+  background: oklch(0.4 0.005 255);
+}
+
+/* The auto-generated "OAS 3.1" badge (small.version-stamp) is a more
+   specific selector than .title small above — needs its own rule in both
+   themes or it keeps Swagger UI's own green regardless of order. */
+.swagger-ui .info .title small.version-stamp {
+  background-color: oklch(0.55 0.12 215);
+}
+html.dark-mode .swagger-ui .info .title small.version-stamp {
+  background: oklch(0.6 0.13 215);
+}
+
+/* 13px — docs/DESIGN-SYSTEM.md Typography scale's "body" bucket (legend
+   label, category, input), not Swagger UI's own 14px default. */
+.swagger-ui .info__description,
+.swagger-ui .info__description p {
+  max-width: 780px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.swagger-ui .info a {
+  color: oklch(0.55 0.12 215);
+}
+.swagger-ui .info a:hover {
+  color: oklch(0.42 0.11 215);
+}
+html.dark-mode .swagger-ui .info a {
+  color: oklch(0.6 0.13 215);
+}
+
+/* Inline-code exception — docs/DESIGN-SYSTEM.md "Inline code color". */
+.swagger-ui .info code {
+  background: oklch(0.9 0.005 255);
+  color: oklch(0.5 0.12 300);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+html.dark-mode .swagger-ui .info code {
+  background: oklch(0.22 0.015 255);
+  /* The light-mode purple (oklch(0.5 0.12 300)) drops to 2.74:1 against
+     this dark background — fails WCAG AA (needs 4.5:1 for 13px text).
+     Lightened for dark mode only; light mode's value is unchanged and
+     already verified. */
+  color: oklch(0.68 0.1 300);
+}
+
+.swagger-ui .scheme-container {
+  background: oklch(0.96 0.004 255);
+  box-shadow: none;
+  border-top: 1px solid oklch(0.88 0.006 255);
+  border-bottom: 1px solid oklch(0.88 0.006 255);
+  padding: 20px 48px;
+}
+html.dark-mode .swagger-ui .scheme-container {
+  background: oklch(0.18 0.015 255);
+  box-shadow: none;
+  border-top: 1px solid oklch(0.26 0.015 255);
+  border-bottom: 1px solid oklch(0.26 0.015 255);
+}
+
+/* Matches the mockup's Authorize button exactly (border-width, radius,
+   padding, weight, flex+gap icon spacing) — the real Swagger UI .btn base
+   (2px border, 4px radius, 5px 23px padding, weight 700, box-shadow, and
+   a float-based span instead of flex) rendered visibly heavier/blockier
+   than the mock. */
+.swagger-ui .scheme-container .btn.authorize {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-width: 1.5px;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-weight: 650;
+  box-shadow: none;
+  border-color: oklch(0.55 0.12 215);
+  color: oklch(0.55 0.12 215);
+}
+.swagger-ui .scheme-container .btn.authorize span {
+  float: none;
+  padding: 0;
+}
+.swagger-ui .scheme-container .btn.authorize svg {
+  fill: oklch(0.55 0.12 215);
+}
+.swagger-ui .scheme-container .btn.authorize:hover {
+  background: oklch(0.55 0.12 215);
+  color: white;
+}
+.swagger-ui .scheme-container .btn.authorize:hover svg {
+  fill: white;
+}
+html.dark-mode .swagger-ui .scheme-container .btn.authorize {
+  border-color: oklch(0.6 0.13 215);
+  color: oklch(0.6 0.13 215);
+}
+html.dark-mode .swagger-ui .scheme-container .btn.authorize svg {
+  fill: oklch(0.6 0.13 215);
+}
+
+/* 32px between each endpoint group (routes/parking/stations/...) — real
+   Swagger UI has no gap here at all (.opblock-tag-section itself carries
+   zero margin, confirmed live: two consecutive groups measured 0px apart
+   before this rule), relying only on the last opblock's 15px bottom
+   margin, which read as cramped next to the mockup's deliberate 32px. */
+.swagger-ui .opblock-tag-section {
+  margin-top: 32px;
+}
+
+.swagger-ui .opblock-tag {
+  border-bottom-color: oklch(0.88 0.006 255);
+  padding: 0 0 12px;
+  margin: 0 0 4px;
+}
+html.dark-mode .swagger-ui .opblock-tag {
+  border-bottom-color: oklch(0.26 0.015 255);
+  color: oklch(0.985 0.004 255);
+}
+
+/* Endpoint row: flat (no box-shadow — the mockup's cards are flat,
+   matching docs/DESIGN-SYSTEM.md's "precision, not decoration" core
+   principle), margin-top instead of Swagger's own margin-bottom (same
+   visual gap, matches the mockup's own declared direction), 5px radius
+   per the mockup (Swagger's own default is 4px). */
+.swagger-ui .opblock {
+  box-shadow: none;
+  border-radius: 5px;
+  margin: 10px 0 0;
+}
+
+.swagger-ui section.models,
+.swagger-ui section.models.is-open {
+  border-color: oklch(0.88 0.006 255);
+  margin-top: 44px;
+  border-radius: 6px;
+  padding: 20px 24px;
+}
+html.dark-mode .swagger-ui section.models {
+  border-color: oklch(0.26 0.015 255);
+}
+
+/* Each schema's row is a <article class="json-schema-2020-12"> in this
+   Swagger UI version's newer JSON-Schema-2020-12 viewer — a different,
+   newer component than the .model-container/.model-box classes older
+   Swagger UI docs describe. Targeting the wrong (older) class names meant
+   nothing here was ever actually overridden — confirmed live (0 matches)
+   before this fix. */
+.swagger-ui section.models .json-schema-2020-12 {
+  background: oklch(0.96 0.004 255);
+  border-radius: 4px;
+  margin: 0 0 6px;
+  /* The article itself has its own native padding: 12px 0 12px 20px,
+     stacking on top of .json-schema-2020-12-head's padding below (two
+     nested padding levels) — confirmed live as the actual cause of the
+     row reading taller than the GET/opblock rows, not the head's own
+     padding alone. */
+  padding: 0;
+}
+.swagger-ui section.models .json-schema-2020-12:last-child {
+  margin-bottom: 0;
+}
+/* Not a flex row by default (confirmed live: title/Expand-all/object were
+   stacking with large block-level gaps instead of sitting in one compact
+   line) — forcing it explicitly is what actually lets gap/margin-left:auto
+   below do anything. */
+.swagger-ui .json-schema-2020-12-head {
+  display: flex !important;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 12px;
+}
+.swagger-ui .json-schema-2020-12-head .json-schema-2020-12-accordion {
+  display: flex;
+  align-items: center;
+}
+.swagger-ui .json-schema-2020-12__title,
+.swagger-ui .models .json-schema-2020-12:not(.json-schema-2020-12--embedded) > .json-schema-2020-12-head .json-schema-2020-12__title:first-of-type {
+  font-size: 14px;
+  font-weight: 650;
+  color: oklch(0.2 0.01 255);
+}
+.swagger-ui .json-schema-2020-12-expand-deep-button {
+  font-size: 13px;
+  color: oklch(0.5 0.01 255);
+}
+.swagger-ui .json-schema-2020-12__attribute--primary {
+  font-size: 13px;
+  font-weight: 650;
+  color: oklch(0.55 0.12 215);
+  margin-left: auto;
+}
+html.dark-mode .swagger-ui section.models .json-schema-2020-12 {
+  background: oklch(0.22 0.015 255);
+}
+/* Must match the light-mode rule's own (unusually high, needed to beat
+   the base CSS's font-size) specificity — a plain html.dark-mode
+   .json-schema-2020-12__title selector is lower-specificity than the
+   compound :first-of-type selector above and silently lost to it,
+   leaving every schema title unreadable-dark against the dark row
+   background (found from the developer's own screenshot, not caught by
+   the earlier contrast math since that only checked the color value in
+   isolation, not which rule actually wins). */
+html.dark-mode .swagger-ui .json-schema-2020-12__title,
+html.dark-mode .swagger-ui .models .json-schema-2020-12:not(.json-schema-2020-12--embedded) > .json-schema-2020-12-head .json-schema-2020-12__title:first-of-type {
+  color: oklch(0.985 0.004 255);
+}
+/* Both fail WCAG AA against the dark row background above (2.89:1 and
+   3.85:1 respectively) — found during the End-stage review, not live
+   testing this time, since neither is easy to notice by eye at a glance. */
+html.dark-mode .swagger-ui .json-schema-2020-12-expand-deep-button {
+  color: oklch(0.65 0.01 255);
+}
+html.dark-mode .swagger-ui .json-schema-2020-12__attribute--primary {
+  color: oklch(0.6 0.13 215);
+}
+
+/* Schemas title row: real Swagger UI's h4 carries its own 10px 20px 10px
+   10px padding, stacking on top of the card's own 20px 24px padding above
+   (double inset), plus a border-bottom + margin once the panel is open —
+   the mockup has none of that, just a flush flex row with 16px below it
+   before the first schema row. */
+.swagger-ui section.models h4,
+.swagger-ui section.models.is-open h4 {
+  padding: 0;
+  margin: 0 0 16px;
+  border-bottom: none;
+  font-size: 19px;
+  font-weight: 700;
+  color: oklch(0.16 0.02 255);
+}
+html.dark-mode .swagger-ui section.models h4 {
+  color: oklch(0.985 0.004 255);
+}
+
+/* HTTP method badge colors — docs/DESIGN-SYSTEM.md "HTTP method badge
+   colors". Only .opblock-get renders today (this API is GET-only); the
+   other four are pre-decided so Phase 6/PUT don't reopen this pass. Each
+   verb needs a light AND dark rule (see file header note above). */
+.swagger-ui .opblock.opblock-get {
+  background: oklch(0.48 0.13 150 / 0.06);
+  border-color: oklch(0.48 0.13 150);
+}
+.swagger-ui .opblock.opblock-get .opblock-summary-method {
+  background: oklch(0.48 0.13 150);
+}
+html.dark-mode .swagger-ui .opblock.opblock-get {
+  background: oklch(0.3 0.08 150 / 0.15);
+  border-color: oklch(0.48 0.13 150);
+}
+html.dark-mode .swagger-ui .opblock.opblock-get .opblock-summary-method {
+  background: oklch(0.6 0.15 150);
+  color: oklch(0.12 0.02 150);
+}
+
+.swagger-ui .opblock.opblock-post {
+  background: oklch(0.48 0.1 70 / 0.06);
+  border-color: oklch(0.48 0.1 70);
+}
+.swagger-ui .opblock.opblock-post .opblock-summary-method {
+  background: oklch(0.48 0.1 70);
+}
+html.dark-mode .swagger-ui .opblock.opblock-post {
+  background: oklch(0.3 0.06 70 / 0.15);
+  border-color: oklch(0.48 0.1 70);
+}
+html.dark-mode .swagger-ui .opblock.opblock-post .opblock-summary-method {
+  background: oklch(0.65 0.12 70);
+  color: oklch(0.12 0.02 70);
+}
+
+.swagger-ui .opblock.opblock-put {
+  background: oklch(0.48 0.15 255 / 0.06);
+  border-color: oklch(0.48 0.15 255);
+}
+.swagger-ui .opblock.opblock-put .opblock-summary-method {
+  background: oklch(0.48 0.15 255);
+}
+html.dark-mode .swagger-ui .opblock.opblock-put {
+  background: oklch(0.3 0.09 255 / 0.15);
+  border-color: oklch(0.48 0.15 255);
+}
+html.dark-mode .swagger-ui .opblock.opblock-put .opblock-summary-method {
+  background: oklch(0.65 0.15 255);
+  color: oklch(0.12 0.02 255);
+}
+
+.swagger-ui .opblock.opblock-patch {
+  background: oklch(0.48 0.15 305 / 0.06);
+  border-color: oklch(0.48 0.15 305);
+}
+.swagger-ui .opblock.opblock-patch .opblock-summary-method {
+  background: oklch(0.48 0.15 305);
+}
+html.dark-mode .swagger-ui .opblock.opblock-patch {
+  background: oklch(0.3 0.09 305 / 0.15);
+  border-color: oklch(0.48 0.15 305);
+}
+html.dark-mode .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+  background: oklch(0.65 0.15 305);
+  color: oklch(0.12 0.02 305);
+}
+
+.swagger-ui .opblock.opblock-delete {
+  background: oklch(0.48 0.15 25 / 0.06);
+  border-color: oklch(0.48 0.15 25);
+}
+.swagger-ui .opblock.opblock-delete .opblock-summary-method {
+  background: oklch(0.48 0.15 25);
+}
+html.dark-mode .swagger-ui .opblock.opblock-delete {
+  background: oklch(0.3 0.09 25 / 0.15);
+  border-color: oklch(0.48 0.15 25);
+}
+html.dark-mode .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+  background: oklch(0.65 0.15 25);
+  color: oklch(0.12 0.02 25);
+}
