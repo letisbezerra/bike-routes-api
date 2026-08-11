@@ -5,15 +5,37 @@
 const API_BASE = "http://127.0.0.1:8000/v1";
 const API_KEY = "4xaMRIrY1ri5FgFqbD3CRE8CsT3OOM0BQK0P7NkntEA";
 
-// docs/DATA_SOURCES.md — Fortaleza's data bounding box, [lat, lon] pairs.
+// Initial view — tighter than docs/DATA_SOURCES.md's full data extent
+// ([-3.87,-38.63] to [-3.69,-38.42]), centered on the same point but at
+// ~60% of that box's size, so the map opens already zoomed into the urban
+// core instead of the widest possible frame.
 const FORTALEZA_BOUNDS = [
-  [-3.87, -38.63],
-  [-3.69, -38.42],
+  [-3.834, -38.588],
+  [-3.726, -38.462],
 ];
 
 // docs/specs/09-web-viewer.md's line/marker styles — values read directly
 // from the Map.dc.html mockup's buildLayerGroups(), not approximated.
-const ROUTE_STYLE = { color: "#3f7fb0", weight: 4, opacity: 0.9, lineCap: "round", lineJoin: "round" };
+const ROUTE_BASE_STYLE = { weight: 4, opacity: 0.9, lineCap: "round", lineJoin: "round" };
+
+// docs/DESIGN-SYSTEM.md extension — one color per Tipologia, derived from
+// the mockup's single Routes color (#3f7fb0 = oklch(0.576 0.100 244)) by
+// varying only lightness within that same hue/chroma, not 4 unrelated
+// hues (which would compete with the other map-data categories — parking
+// is already amber, rest points already purple). Darker = more physically
+// protected infrastructure, lighter = less — the gradient carries real
+// meaning, not an arbitrary assignment.
+const ROUTE_CATEGORY_COLORS = {
+  ciclovia: "#02385b",
+  ciclofaixa: "#096399",
+  ciclorrota: "#4d99d3",
+  passeio_compartilhado: "#9ed1fb",
+};
+
+function routeStyle(feature) {
+  return { ...ROUTE_BASE_STYLE, color: ROUTE_CATEGORY_COLORS[feature.properties.category] };
+}
+
 const LEISURE_ROUTE_STYLE = {
   color: "#c05a3c", weight: 4, opacity: 0.9, lineCap: "round", lineJoin: "round", dashArray: "10,8",
 };
@@ -198,6 +220,27 @@ function applyFilters() {
   updateLegendCounts();
 }
 
+// Zooms to whatever the current Bairro text actually matched (routes +
+// stations already filtered by applyFilters above) — not a real
+// neighborhood-boundary lookup, since the API has no geographic bairro
+// data, only the name as a text field on each route/station. Debounced
+// (not tied to every keystroke) so the map doesn't jump mid-typing;
+// resets on each new keystroke via clearTimeout. Only fires while Bairro
+// has text — clearing it leaves the view where the user last put it.
+let bairroZoomTimeout = null;
+
+function scheduleBairroZoom() {
+  clearTimeout(bairroZoomTimeout);
+  if (!neighborhoodInput.value.trim()) return;
+  bairroZoomTimeout = setTimeout(zoomToBairroMatches, 500);
+}
+
+function zoomToBairroMatches() {
+  const matchedLayers = [...layerGroups.routes.getLayers(), ...layerGroups.station.getLayers()];
+  if (matchedLayers.length === 0) return;
+  map.flyToBounds(L.featureGroup(matchedLayers).getBounds(), { padding: [40, 40], maxZoom: 16 });
+}
+
 function boundsToBbox(bounds) {
   const sw = bounds.getSouthWest();
   const ne = bounds.getNorthEast();
@@ -286,7 +329,7 @@ async function searchCurrentArea() {
     if (generation !== requestGeneration) return; // a newer search already started
 
     clearLayers();
-    renderLineCollection(routes, ROUTE_STYLE, layerGroups.routes);
+    renderLineCollection(routes, routeStyle, layerGroups.routes);
     renderLineCollection(leisureRoutes, LEISURE_ROUTE_STYLE, layerGroups.leisure_routes);
     renderSupportPoints(supportPoints);
 
@@ -341,4 +384,7 @@ document.querySelectorAll("#layer-legend input[type=checkbox]").forEach((checkbo
 });
 
 tipologiaCheckboxes.forEach((checkbox) => checkbox.addEventListener("change", applyFilters));
-neighborhoodInput.addEventListener("input", applyFilters);
+neighborhoodInput.addEventListener("input", () => {
+  applyFilters();
+  scheduleBairroZoom();
+});

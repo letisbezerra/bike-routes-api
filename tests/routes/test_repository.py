@@ -21,19 +21,26 @@ SMALL_SELECTIVE_BBOX = (-38.53, -3.75, -38.52, -3.74)  # 5 of 447 rows
 # clipping fixtures that must not overlap the 447 real rows.
 CLIPPING_BBOX = (0.0, 0.0, 10.0, 10.0)
 
+# Isolated far from CLIPPING_BBOX too — synthetic ordering-fairness
+# fixtures must not overlap either the real dataset or the clip fixtures.
+ORDERING_BBOX = (20.0, 20.0, 30.0, 30.0)
+
 
 @pytest.fixture
 def route_factory():
-    """Inserts a temporary BikeRoute with a given geometry, returns its id.
-    All rows created via this fixture are deleted at teardown."""
+    """Inserts a temporary BikeRoute with a given geometry (and, since the
+    pagination-fairness fix, category), returns its id. All rows created
+    via this fixture are deleted at teardown."""
     created_ids = []
 
-    def _make(coordinates: list[tuple[float, float]]) -> int:
+    def _make(
+        coordinates: list[tuple[float, float]], category: RouteCategory = RouteCategory.CICLOVIA
+    ) -> int:
         with SessionLocal() as session:
             route = BikeRoute(
                 source_id=f"test-repo-clip-{uuid.uuid4()}",
                 name="Fixture route",
-                category=RouteCategory.CICLOVIA,
+                category=category,
                 length_km=None,
                 segment=None,
                 road_position=None,
@@ -82,6 +89,88 @@ def test_list_paginated_filters_by_category():
         )
     assert total == 93
     assert all(route.category == RouteCategory.CICLOVIA for route, _, _ in rows)
+
+
+def test_list_paginated_walks_every_page_without_duplicates_or_gaps():
+    """Regression coverage for the round-robin reorder: the new ordering
+    must still be a valid, complete pagination — every one of the 447 real
+    rows appears exactly once across all pages, nothing duplicated or lost."""
+    seen_ids: set[int] = set()
+    with SessionLocal() as session:
+        for page in (1, 2, 3):
+            rows, total = list_paginated(session, page=page, page_size=200)
+            assert total == 447
+            page_ids = {route.id for route, _, _ in rows}
+            assert seen_ids.isdisjoint(page_ids)
+            seen_ids |= page_ids
+    assert len(seen_ids) == 447
+
+
+def test_list_paginated_round_robin_prevents_one_category_starving_the_page(route_factory):
+    """Regression test for the pagination-fairness bug: found live in the
+    web viewer when a large-bbox query returned a page 1 that was 100%
+    ciclofaixa/ciclovia, because the original ordering was plain id and the
+    source data was ingested in ID-contiguous blocks per category. Seeds
+    enough ciclofaixa fixtures to fill a page by itself, plus one of each
+    other category, and asserts the page still contains a mix."""
+    # Diagonal segments, not axis-aligned — this PostGIS/GEOS build returns
+    # an empty ST_Intersection for a perfectly horizontal/vertical line
+    # even when it's fully inside the envelope (unrelated GEOS quirk,
+    # confirmed independently of this fix); every other fixture in this
+    # file already happens to use diagonals for the same reason.
+    ids_by_category = {
+        RouteCategory.CICLOFAIXA: [
+            route_factory(
+                [(21 + i * 0.1, 21), (21 + i * 0.1 + 0.05, 21.05)],
+                category=RouteCategory.CICLOFAIXA,
+            )
+            for i in range(15)
+        ],
+        RouteCategory.CICLOVIA: [
+            route_factory([(21, 22), (21.05, 22.05)], category=RouteCategory.CICLOVIA)
+        ],
+        RouteCategory.CICLORROTA: [
+            route_factory([(21, 23), (21.05, 23.05)], category=RouteCategory.CICLORROTA)
+        ],
+        RouteCategory.PASSEIO_COMPARTILHADO: [
+            route_factory(
+                [(21, 24), (21.05, 24.05)], category=RouteCategory.PASSEIO_COMPARTILHADO
+            )
+        ],
+    }
+
+    with SessionLocal() as session:
+        first_page, total = list_paginated(
+            session, page=1, page_size=10, bbox=ORDERING_BBOX
+        )
+
+    assert total == sum(len(ids) for ids in ids_by_category.values())
+    categories_on_page = {route.category for route, _, _ in first_page}
+    assert categories_on_page == set(ids_by_category.keys())
+
+
+def test_list_paginated_single_category_filter_orders_by_id(route_factory):
+    """When `category` already narrows to one value, the round-robin
+    degenerates to a plain per-category id order — no special-casing
+    needed in the query, but worth asserting explicitly."""
+    ids = [
+        route_factory(
+            [(26, 26 + i * 0.1), (26.05, 26 + i * 0.1 + 0.05)], category=RouteCategory.CICLORROTA
+        )
+        for i in range(5)
+    ]
+
+    with SessionLocal() as session:
+        rows, _ = list_paginated(
+            session,
+            page=1,
+            page_size=10,
+            category=RouteCategory.CICLORROTA,
+            bbox=ORDERING_BBOX,
+        )
+
+    fixture_ids_in_order = [route.id for route, _, _ in rows if route.id in ids]
+    assert fixture_ids_in_order == sorted(fixture_ids_in_order)
 
 
 def test_list_paginated_filters_by_neighborhood():
