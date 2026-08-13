@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import sentry_sdk
@@ -17,6 +18,8 @@ from app.shared.errors import register_error_handlers
 from app.shared.middleware import SecurityHeadersMiddleware, limiter
 from app.stations.router import router as stations_router
 from app.support_points.router import router as support_points_router
+
+logger = logging.getLogger(__name__)
 
 # Error monitoring only — no tracing/profiling/PII (docs/ARCHITECTURE.md:
 # "Sentry catches unhandled exceptions... second priority", distinct from
@@ -104,7 +107,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount(
+    "/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static"
+)
 
 
 @app.get("/", include_in_schema=False)
@@ -124,6 +129,7 @@ def root():
 _SWAGGER_HEADER = (
     (Path(__file__).parent / "templates" / "swagger-header.html").read_text().rstrip()
 )
+_SWAGGER_UI_PLACEHOLDER = '<div id="swagger-ui">\n    </div>'
 
 
 _SWAGGER_CSS_PATH = Path(__file__).parent / "static" / "swagger-custom.css"
@@ -143,10 +149,28 @@ def custom_swagger_ui():
         title=f"{APP_NAME} — Documentation",
         swagger_css_url=f"/static/swagger-custom.css?v={css_version}",
     )
-    html = response.body.decode("utf-8").replace(
-        '<div id="swagger-ui">\n    </div>', _SWAGGER_HEADER
-    )
-    return HTMLResponse(html)
+    html = response.body.decode("utf-8")
+    if _SWAGGER_UI_PLACEHOLDER not in html:
+        # A FastAPI/Starlette version bump changed get_swagger_ui_html()'s
+        # generated markup — .replace() below would otherwise silently
+        # no-op, dropping the header/theme-toggle with no error and no
+        # test to catch it (code-review 2026-08-11). /docs still renders;
+        # this just makes the regression loud in the logs instead of only
+        # visible on a manual look at the page.
+        logger.error(
+            "Swagger UI placeholder div not found in generated HTML — "
+            "custom header/theme-toggle was not injected into /docs."
+        )
+    else:
+        html = html.replace(_SWAGGER_UI_PLACEHOLDER, _SWAGGER_HEADER)
+    # The linked CSS is cache-busted (above), but this HTML document itself
+    # had no Cache-Control at all — browsers were free to keep serving an
+    # old cached page indefinitely, with no way to tell from the URL alone
+    # (unlike the CSS's ?v=) that a newer one existed. Confirmed live: two
+    # browsers open against the same running server showed different
+    # content, one stale and one current (code-review 2026-08-12). This
+    # page is cheap to regenerate — never worth a browser caching it.
+    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
 @app.get(

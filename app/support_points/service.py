@@ -1,5 +1,3 @@
-from math import ceil
-
 from sqlalchemy import case, func, literal, select, union_all
 from sqlalchemy.orm import Session
 
@@ -33,7 +31,9 @@ _RESOURCES = {
 # since resource_type sorts alphabetically — with 301 parking rows
 # city-wide, any bbox with enough matches filled an entire page with
 # parking alone before the union ever reached the other two types.
-_TYPE_ORDER = {"parking": 0, "station": 1, "rest_point": 2}
+# Derived from _RESOURCES itself (not a separately hand-copied literal) so
+# the two dicts can never drift out of sync.
+_TYPE_ORDER = {resource_type: i for i, resource_type in enumerate(_RESOURCES)}
 
 
 def _resource_ids(resource_type: str, model: type, bbox: BboxTuple):
@@ -93,7 +93,6 @@ def list_support_points(
     ).subquery()
 
     total = session.execute(select(func.count()).select_from(id_union)).scalar_one()
-    total_pages = ceil(total / page_size) if total else 0
 
     # All 3 keys always present, even at 0 — a type absent from the GROUP BY
     # result (no matches in this bbox) must still read as "0", not missing.
@@ -107,8 +106,8 @@ def list_support_points(
     if total == 0:
         return SupportPointFeatureCollection(
             features=[],
-            meta=SupportPointsPaginationMeta(
-                page=page, page_size=page_size, total=0, total_pages=0, total_by_type=total_by_type
+            meta=SupportPointsPaginationMeta.build(
+                page=page, page_size=page_size, total=0, total_by_type=total_by_type
             ),
         )
 
@@ -129,19 +128,30 @@ def list_support_points(
         .limit(page_size)
     ).all()
 
+    # .get(), not indexing: page_ids and the row fetch below are separate
+    # queries (docs/specs/07-support-points-endpoint.md), so a row deleted
+    # between them (e.g. by a concurrent scripts/ingest.py run against the
+    # same live database) would otherwise KeyError into a 500. Dropping it
+    # from this page is the correct degrade — the request still returns a
+    # valid, if very slightly stale, page instead of failing outright.
+    # Known, accepted gap (code-review 2026-08-12): meta.total/total_by_type
+    # above are computed from an earlier, separate query and are NOT
+    # decremented when a row is dropped here, so they can overstate this
+    # page's real feature count in that same rare race window. Fixing that
+    # precisely would need a snapshot/transaction spanning both queries —
+    # not worth the complexity for a race this narrow; a 200 with a
+    # slightly-off count is still strictly better than the 500 this
+    # replaced.
     rows_by_key = _fetch_page_rows(session, page_ids)
     features = [
-        _to_feature(resource_type, rows_by_key[(resource_type, row_id)])
+        _to_feature(resource_type, row)
         for resource_type, row_id in page_ids
+        if (row := rows_by_key.get((resource_type, row_id))) is not None
     ]
 
     return SupportPointFeatureCollection(
         features=features,
-        meta=SupportPointsPaginationMeta(
-            page=page,
-            page_size=page_size,
-            total=total,
-            total_pages=total_pages,
-            total_by_type=total_by_type,
+        meta=SupportPointsPaginationMeta.build(
+            page=page, page_size=page_size, total=total, total_by_type=total_by_type
         ),
     )

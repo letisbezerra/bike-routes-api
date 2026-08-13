@@ -1,5 +1,3 @@
-from math import ceil
-
 from sqlalchemy.orm import Session
 
 from app.shared.geojson import to_geojson_geometry
@@ -37,10 +35,9 @@ def list_stations(
         neighborhood=neighborhood,
         bbox=bbox,
     )
-    total_pages = ceil(total / page_size)
     return BikeShareStationFeatureCollection(
         features=[_to_feature(row) for row in rows],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
+        meta=PaginationMeta.build(page=page, page_size=page_size, total=total),
     )
 
 

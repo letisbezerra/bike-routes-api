@@ -99,14 +99,16 @@ themeToggle.addEventListener("click", () => {
 
 // One layerGroup per resource type — cleared and repopulated on each
 // search, added/removed from the map by their checkbox (docs/specs/09,
-// decision 7). All start visible, matching the checkboxes' default
-// `checked` state in index.html.
+// decision 7). Each starts on/off the map matching its checkbox's default
+// `checked` state in index.html — only "routes" starts checked, so the
+// first search doesn't cover the map in every layer at once before the
+// user has picked what they actually want to see (code-review 2026-08-12).
 const layerGroups = {
   routes: L.layerGroup().addTo(map),
-  leisure_routes: L.layerGroup().addTo(map),
-  parking: L.layerGroup().addTo(map),
-  station: L.layerGroup().addTo(map),
-  rest_point: L.layerGroup().addTo(map),
+  leisure_routes: L.layerGroup(),
+  parking: L.layerGroup(),
+  station: L.layerGroup(),
+  rest_point: L.layerGroup(),
 };
 
 const searchButton = document.getElementById("search-button");
@@ -388,3 +390,12 @@ neighborhoodInput.addEventListener("input", () => {
   applyFilters();
   scheduleBairroZoom();
 });
+
+// One automatic search on load, for the initial view only — every checkbox
+// change/pan afterward stays manual (docs/specs/09-web-viewer.md's "fewer
+// calls against the shared rate limit" reasoning still holds for those).
+// Without this, "Rotas" showed checked over an empty map until the visitor
+// found and clicked "Buscar nesta área" themselves — confusing on first
+// look, since a checked box otherwise means "this is currently shown"
+// everywhere else in this UI (code-review 2026-08-12).
+searchCurrentArea();

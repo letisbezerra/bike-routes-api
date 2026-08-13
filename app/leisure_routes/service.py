@@ -1,5 +1,3 @@
-from math import ceil
-
 from geoalchemy2.types import WKBElement
 from sqlalchemy.orm import Session
 
@@ -35,13 +33,12 @@ def list_leisure_routes(
     bbox: tuple[float, float, float, float] | None = None,
 ) -> LeisureRouteFeatureCollection:
     rows, total = list_paginated(session, page=page, page_size=page_size, bbox=bbox)
-    total_pages = ceil(total / page_size)
     return LeisureRouteFeatureCollection(
         features=[
             _to_feature(leisure_route, clipped_geometry, is_clipped)
             for leisure_route, clipped_geometry, is_clipped in rows
         ],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
+        meta=PaginationMeta.build(page=page, page_size=page_size, total=total),
     )
 
 

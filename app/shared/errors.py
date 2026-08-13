@@ -91,7 +91,17 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSO
     message = f"Rate limit exceeded ({settings.rate_limit_per_minute} requests per minute)."
     content = build_error_content("rate_limited", message, hint="Wait a moment before retrying.")
     response = JSONResponse(status_code=429, content=content)
-    return request.app.state.limiter._inject_headers(response, request.state.view_rate_limit)
+    try:
+        # limiter._inject_headers/request.state.view_rate_limit are private,
+        # undocumented slowapi internals (code-review 2026-08-11) — a
+        # version bump could rename or remove either. Falling back to the
+        # response without the informational rate-limit headers keeps the
+        # 429 itself correct instead of turning into an unhandled 500 from
+        # inside the handler meant to handle this gracefully.
+        return request.app.state.limiter._inject_headers(response, request.state.view_rate_limit)
+    except AttributeError:
+        logger.warning("slowapi._inject_headers unavailable — omitting rate-limit headers")
+        return response
 
 
 async def validation_exception_handler(
