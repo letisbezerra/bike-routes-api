@@ -1,5 +1,3 @@
-from math import ceil
-
 from sqlalchemy.orm import Session
 
 from app.rest_points.models import RestPoint
@@ -28,10 +26,9 @@ def list_rest_points(
     bbox: tuple[float, float, float, float] | None = None,
 ) -> RestPointFeatureCollection:
     rows, total = list_paginated(session, page=page, page_size=page_size, bbox=bbox)
-    total_pages = ceil(total / page_size)
     return RestPointFeatureCollection(
         features=[_to_feature(row) for row in rows],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
+        meta=PaginationMeta.build(page=page, page_size=page_size, total=total),
     )
 
 

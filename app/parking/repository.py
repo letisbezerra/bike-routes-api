@@ -1,8 +1,16 @@
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.parking.models import BikeParking
-from app.shared.spatial import apply_bbox_filter
+from app.parking.models import BikeParking, ParkingType
+from app.shared.spatial import apply_bbox_filter, apply_round_robin_order, total_count
+
+# code-review 2026-08-11: data/raw/estacionamentos_de_bicicleta.geojson is
+# ingested as ~296 contiguous "paraciclo" rows followed by only 5
+# "bicicletario" rows, the same id-contiguous-per-type shape that caused the
+# routes starvation bug (app/routes/repository.py) — plain `ORDER BY id`
+# here reproduced it: an unfiltered/wide-bbox page never reached
+# "bicicletario". Derived from the enum so a future 3rd type is covered.
+_TYPE_ORDER = {t: i for i, t in enumerate(ParkingType)}
 
 
 def list_paginated(
@@ -19,14 +27,9 @@ def list_paginated(
     if bbox is not None:
         stmt = apply_bbox_filter(stmt, BikeParking.geometry, bbox)
 
-    total = session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
-    rows = (
-        session.execute(
-            stmt.order_by(BikeParking.id).offset((page - 1) * page_size).limit(page_size)
-        )
-        .scalars()
-        .all()
-    )
+    total = total_count(session, stmt)
+    stmt = apply_round_robin_order(stmt, BikeParking.type, BikeParking.id, _TYPE_ORDER)
+    rows = session.execute(stmt.offset((page - 1) * page_size).limit(page_size)).scalars().all()
     return list(rows), total
 
 

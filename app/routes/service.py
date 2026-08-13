@@ -1,5 +1,3 @@
-from math import ceil
-
 from geoalchemy2.types import WKBElement
 from sqlalchemy.orm import Session
 
@@ -38,13 +36,12 @@ def list_routes(
         neighborhood=neighborhood,
         bbox=bbox,
     )
-    total_pages = ceil(total / page_size)
     return BikeRouteFeatureCollection(
         features=[
             _to_feature(route, clipped_geometry, is_clipped)
             for route, clipped_geometry, is_clipped in rows
         ],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
+        meta=PaginationMeta.build(page=page, page_size=page_size, total=total),
     )
 
 

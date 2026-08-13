@@ -235,7 +235,15 @@ html.dark-mode .swagger-ui .scheme-container {
   padding: 0;
 }
 .swagger-ui .scheme-container .btn.authorize svg {
+  /* Both properties, not just fill: the icon's actual <path> carries its
+     own fill="currentColor" attribute, which resolves from *color*, not
+     from this svg's fill — swagger-ui's own base CSS sets color on this
+     svg (its default green, #49cc90) with enough specificity that only
+     overriding fill here left the path still reading that green via
+     currentColor (code-review 2026-08-12, found live: computed fill on
+     the path was rgb(73, 204, 144) despite this rule). */
   fill: oklch(0.55 0.12 215);
+  color: oklch(0.55 0.12 215);
 }
 .swagger-ui .scheme-container .btn.authorize:hover {
   background: oklch(0.55 0.12 215);
@@ -243,6 +251,7 @@ html.dark-mode .swagger-ui .scheme-container {
 }
 .swagger-ui .scheme-container .btn.authorize:hover svg {
   fill: white;
+  color: white;
 }
 html.dark-mode .swagger-ui .scheme-container .btn.authorize {
   border-color: oklch(0.6 0.13 215);
@@ -250,6 +259,16 @@ html.dark-mode .swagger-ui .scheme-container .btn.authorize {
 }
 html.dark-mode .swagger-ui .scheme-container .btn.authorize svg {
   fill: oklch(0.6 0.13 215);
+  color: oklch(0.6 0.13 215);
+}
+/* Needed in addition to the plain :hover svg rule above — that rule's
+   specificity (4 classes + svg) is lower than this dark-mode rule's own
+   (5 classes + html + svg), so without this the icon stayed the dark-mode
+   teal on hover instead of turning white, low-contrast against the same
+   teal hover background (code-review 2026-08-12, found live). */
+html.dark-mode .swagger-ui .scheme-container .btn.authorize:hover svg {
+  fill: white;
+  color: white;
 }
 
 /* 32px between each endpoint group (routes/parking/stations/...) — real
@@ -300,6 +319,13 @@ html.dark-mode .swagger-ui section.models {
    nothing here was ever actually overridden — confirmed live (0 matches)
    before this fix. */
 .swagger-ui section.models .json-schema-2020-12 {
+  /* oklch(0.96 0.004 255) is the mockup's own value for this row
+     (confirmed 2026-08-12 against the mockup's source directly — briefly
+     removed by mistake, based on a verbal description instead of
+     rechecking the mockup itself). The accordion-button fix below is what
+     actually needed fixing: without it, that button's own unstyled native
+     gray sat on TOP of this row background, reading as one darker,
+     inconsistent-per-browser gray instead of this single flat one. */
   background: oklch(0.96 0.004 255);
   border-radius: 4px;
   margin: 0 0 6px;
@@ -326,6 +352,15 @@ html.dark-mode .swagger-ui section.models {
 .swagger-ui .json-schema-2020-12-head .json-schema-2020-12-accordion {
   display: flex;
   align-items: center;
+  /* Real Swagger UI only sets background:transparent on this button inside
+     its older .model-box wrapper — this page uses the newer .models
+     structure instead, which the base CSS never touches here, so the
+     button fell back to each browser's own native <button> chrome (a
+     visible gray box behind the schema title, and inconsistent between
+     Chrome/Safari since native button rendering isn't standardized;
+     code-review 2026-08-12, found live via computed-style diffing). */
+  background: transparent;
+  border: none;
 }
 .swagger-ui .json-schema-2020-12__title,
 .swagger-ui .models .json-schema-2020-12:not(.json-schema-2020-12--embedded) > .json-schema-2020-12-head .json-schema-2020-12__title:first-of-type {
@@ -334,6 +369,14 @@ html.dark-mode .swagger-ui section.models {
   color: oklch(0.2 0.01 255);
 }
 .swagger-ui .json-schema-2020-12-expand-deep-button {
+  /* Same root cause as .json-schema-2020-12-accordion above: real Swagger
+     UI only sets background:transparent on this button inside its older
+     .model-box wrapper, not the .models structure this page actually
+     uses — left as an unstyled native <button> otherwise, which Safari
+     renders with a visible gray fill and Chrome happens not to
+     (code-review 2026-08-12, found live from a Safari screenshot). */
+  background: transparent;
+  border: none;
   font-size: 13px;
   color: oklch(0.5 0.01 255);
 }

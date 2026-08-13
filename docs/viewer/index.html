@@ -8,7 +8,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css" />
+<!-- ?v= bumped by hand on every style.css/app.js edit — this is a plain
+     static site with no build step, so there's no automatic cache-buster
+     like /docs' CSS gets from its mtime. Without it, browsers cache these
+     two files indefinitely (this http server sends no Cache-Control
+     either), so a real code change can silently not show up until a hard
+     refresh — confirmed live 2026-08-12. Same reasoning will matter after
+     this ships to GitHub Pages, where there's no server config to add
+     cache headers at all — this is the one fix that works in both places. -->
+<link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
 <header>
@@ -61,7 +69,7 @@
             <span class="legend-label">Estações</span><br />
             <span class="legend-count" data-count-for="station">0</span>
           </span>
-          <input type="checkbox" data-layer="station" checked />
+          <input type="checkbox" data-layer="station" />
         </label>
         <label class="legend-row">
           <span class="legend-swatch"><span class="legend-swatch-dot" style="background: #c78a2e;"></span></span>
@@ -69,7 +77,7 @@
             <span class="legend-label">Estacionamento</span><br />
             <span class="legend-count" data-count-for="parking">0</span>
           </span>
-          <input type="checkbox" data-layer="parking" checked />
+          <input type="checkbox" data-layer="parking" />
         </label>
         <label class="legend-row">
           <span class="legend-swatch"><span class="legend-swatch-dot" style="background: #a458a0;"></span></span>
@@ -77,7 +85,7 @@
             <span class="legend-label">Pontos de descanso</span><br />
             <span class="legend-count" data-count-for="rest_point">0</span>
           </span>
-          <input type="checkbox" data-layer="rest_point" checked />
+          <input type="checkbox" data-layer="rest_point" />
         </label>
         <label class="legend-row">
           <span class="legend-swatch"><span class="legend-swatch-dashed" style="border-top-color: #c05a3c;"></span></span>
@@ -85,7 +93,7 @@
             <span class="legend-label">Rotas de lazer</span><br />
             <span class="legend-count" data-count-for="leisure_routes">0</span>
           </span>
-          <input type="checkbox" data-layer="leisure_routes" checked />
+          <input type="checkbox" data-layer="leisure_routes" />
         </label>
       </div>
     </div>
@@ -131,6 +139,6 @@
   contributors © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>
 </footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ RESOURCE_PATHS = [
     "/v1/stations",
     "/v1/rest-points",
     "/v1/leisure-routes",
+    "/v1/support-points",
 ]
 
 

@@ -1,8 +1,8 @@
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.rest_points.models import RestPoint
-from app.shared.spatial import apply_bbox_filter
+from app.shared.spatial import apply_bbox_filter, total_count
 
 
 def list_paginated(
@@ -16,7 +16,7 @@ def list_paginated(
     if bbox is not None:
         stmt = apply_bbox_filter(stmt, RestPoint.geometry, bbox)
 
-    total = session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
+    total = total_count(session, stmt)
     rows = (
         session.execute(
             stmt.order_by(RestPoint.id).offset((page - 1) * page_size).limit(page_size)

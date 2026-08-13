@@ -1,9 +1,9 @@
 from geoalchemy2.types import WKBElement
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.leisure_routes.models import LeisureRoute
-from app.shared.spatial import apply_bbox_filter, apply_geometry_clip
+from app.shared.spatial import apply_bbox_filter, apply_geometry_clip, total_count
 
 
 def list_paginated(
@@ -22,7 +22,7 @@ def list_paginated(
         stmt, clipped_geometry, is_clipped = apply_geometry_clip(stmt, LeisureRoute.geometry, bbox)
         stmt = stmt.add_columns(clipped_geometry, is_clipped)
 
-    total = session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
+    total = total_count(session, stmt)
     rows = session.execute(
         stmt.order_by(LeisureRoute.id).offset((page - 1) * page_size).limit(page_size)
     ).all()
