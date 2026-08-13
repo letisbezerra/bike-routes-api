@@ -36,6 +36,8 @@ One table per feature type (mixed geometries across source layers rule out one g
 | `rest_points` | Point | name, image_urls (array, extracted from source HTML, sanitized), source_id |
 | `leisure_routes` | MultiLineString | name, support_count, source_id |
 
+`/v1/support-points` is not a 6th table — an aggregate endpoint unioning `bike_parking`, `bike_share_stations`, and `rest_points` by id, discriminated by a `resource_type` field in the response. Deferred from MVP scope (`docs/CONTEXT.md` §1), added afterward once the web viewer needed all three point layers in one paginated call instead of orchestrating three — see `docs/specs/07-support-points-endpoint.md`.
+
 - **ID**: generated at ingestion (own primary key), never trusts source `Id`/`ID` (has gaps). Original kept as `source_id` for traceability and used as the upsert key. 2 of 5 source files have a native `Id`/`ID` (`bike_routes`, `bike_share_stations`, and even then with gaps); the other 3 (`bike_parking`, `rest_points`, `leisure_routes`) have none. Where no native id exists — or it's blank — `source_id` is generated deterministically from `sha256(name + geometry WKT)`, so ids stay stable across re-ingestion as long as the underlying feature's name/geometry don't change at the source (a real edit is then correctly treated as a new record). Re-ingestion also deletes any `source_id` no longer present in the current batch, so removed features don't linger.
 - **Raw data**: not duplicated in its own table — CKAN is the source of truth/history; re-ingest instead of storing an audit copy.
 - **Enum vs free text**: fields used as API filters (`category`, `type`, `status`) are constrained enums; descriptive fields (`name`, `segment`) stay free text.
@@ -54,11 +56,16 @@ app/
 ├── stations/      # bike_share_stations
 ├── rest_points/   # rest_points
 ├── leisure_routes/ # leisure_routes
-├── shared/        # db session, config, middleware, auth, rate limiting
+├── support_points/ # aggregate endpoint over parking/stations/rest_points, no own table
+├── shared/        # db session, config, middleware, auth, rate limiting, spatial-query helpers
+├── static/        # swagger-custom.css — custom Swagger UI theming
+├── templates/     # swagger-header.html — injected into /docs
 └── main.py
 tests/             # mirrors app/ by domain — tests/routes/, tests/parking/, ...
 data/
 └── raw/           # source GeoJSON snapshots (committed — keeps the project runnable without hitting CKAN first)
+docs/
+└── viewer/        # static Leaflet map consuming this API — no build step, not yet published (see README)
 scripts/
 └── ingest.py      # reads data/raw/*.geojson, cleans, upserts into PostGIS
 alembic/
@@ -87,7 +94,7 @@ Applies directly:
 - Filters (`neighborhood`, `category`, bounding box) and versioning (`/v1`)
 - `GET /health` — unauthenticated, unrated liveness check (needed for free-tier hosts that spin down on inactivity)
 - Auto-generated OpenAPI docs
-- Consistent error shape (`{"error": {"code": ..., "message": ...}}`)
+- Consistent error shape (`{"error": {"code": ..., "message": ...}}`), plus an optional `hint` field (`{"error": {"code": ..., "message": ..., "hint": ...}}`) on error types where a concrete example or next step is genuinely actionable — `401`/`404`/`429` and some `422` cases today, not every error type; omitted entirely (not `null`) when there's nothing useful to add
 - Layered structure (routers/services/repositories/models/schemas), no logic in endpoints
 - Automated tests (unit + integration)
 - One naming convention for all fields (`snake_case`) — the raw source files mix conventions, the API schema doesn't

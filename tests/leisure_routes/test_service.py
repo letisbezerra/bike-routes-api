@@ -22,7 +22,7 @@ def _fake_leisure_route(leisure_route_id: int = 1) -> LeisureRoute:
 def test_list_leisure_routes_builds_correct_pagination_meta():
     with patch(
         "app.leisure_routes.service.list_paginated",
-        return_value=([_fake_leisure_route()], 101),
+        return_value=([(_fake_leisure_route(), None, False)], 101),
     ):
         result = list_leisure_routes(session=None, page=2, page_size=50)
     assert result.meta.page == 2
@@ -42,13 +42,28 @@ def test_list_leisure_routes_pagination_meta_zero_total():
 def test_list_leisure_routes_converts_rows_to_valid_features():
     with patch(
         "app.leisure_routes.service.list_paginated",
-        return_value=([_fake_leisure_route(7)], 1),
+        return_value=([(_fake_leisure_route(7), None, False)], 1),
     ):
         result = list_leisure_routes(session=None, page=1, page_size=50)
     feature = result.features[0]
     assert feature.type == "Feature"
     assert feature.geometry["type"] == "MultiLineString"
+    assert feature.clipped is False
     assert feature.properties.id == 7
+
+
+def test_list_leisure_routes_reports_clipped_geometry_when_present():
+    clipped_shape = from_shape(
+        MultiLineString([[(-38.5, -3.7), (-38.505, -3.705)]]), srid=4326
+    )
+    with patch(
+        "app.leisure_routes.service.list_paginated",
+        return_value=([(_fake_leisure_route(9), clipped_shape, True)], 1),
+    ):
+        result = list_leisure_routes(session=None, page=1, page_size=50, bbox=(-39, -4, -38, -3))
+    feature = result.features[0]
+    assert feature.clipped is True
+    assert feature.geometry["coordinates"] == (((-38.5, -3.7), (-38.505, -3.705)),)
 
 
 def test_get_leisure_route_returns_none_when_repository_returns_none():

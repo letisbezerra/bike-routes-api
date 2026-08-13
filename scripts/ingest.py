@@ -56,9 +56,11 @@ _STATUS_MAP = {
 class SkippableRowError(Exception):
     """A single row is unusable (bad geometry, missing required field) —
     skipped with a warning, not a batch failure. Distinct from ValueError,
-    which map_category/map_parking_type/normalize_status raise to mean the
-    opposite: an unmapped enum value means the code is out of date, so the
-    whole run should stop rather than silently miscategorize data."""
+    which map_category/map_parking_type/normalize_status (and, deliberately,
+    parse_length_km/parse_iso_datetime/parse_br_date — see their docstrings)
+    raise to mean the opposite: something worth stopping the whole run for
+    rather than silently miscategorizing data or pruning a real row that
+    just happened to have one malformed field."""
 
 
 # --- cleaning / normalization -----------------------------------------------
@@ -83,7 +85,13 @@ def require_name(raw: str | None, field_label: str) -> str:
 
 def parse_length_km(raw: str | None) -> float | None:
     """Handles the mixed formats in Extensão (km): comma decimals and a
-    trailing km/Km unit (docs/DATA_SOURCES.md #10)."""
+    trailing km/Km unit (docs/DATA_SOURCES.md #10). Deliberately lets a
+    malformed value's bare ValueError propagate (not SkippableRowError) —
+    code-review 2026-08-12: skipping just this row would still let
+    upsert_and_prune treat the row as absent from the batch and delete a
+    previously-good route from the live database, silently, on nothing
+    more than a bad date/length field. Stopping the whole run so a human
+    looks at it is safer than that, even though it's blunt."""
     value = clean_str(raw)
     if value is None:
         return None
@@ -115,6 +123,8 @@ def parse_int(raw) -> int | None:
 
 
 def parse_iso_datetime(raw: str | None) -> datetime | None:
+    # See parse_length_km's docstring: a bare ValueError here is
+    # deliberate, not an oversight.
     value = clean_str(raw)
     if value is None:
         return None
@@ -122,6 +132,8 @@ def parse_iso_datetime(raw: str | None) -> datetime | None:
 
 
 def parse_br_date(raw: str | None) -> date | None:
+    # See parse_length_km's docstring: a bare ValueError here is
+    # deliberate, not an oversight.
     value = clean_str(raw)
     if value is None:
         return None
@@ -207,19 +219,41 @@ def build_rows(
     """Shared shell for every resource: read features, build geometry, map
     to a row via row_fn. A single bad feature (unparseable geometry, missing
     required field) is logged and skipped, not a batch failure — except an
-    unmapped enum (ValueError), which means the code needs updating and
-    should stop the whole run (docs/specs/02-data-ingestion.md 'Error/edge
-    cases')."""
+    unmapped enum, or a malformed length/date value (both ValueError, by
+    design — see parse_length_km's docstring), which mean the whole run
+    should stop (docs/specs/02-data-ingestion.md 'Error/edge cases').
+
+    If the source file has features but every single one was skipped, that's
+    not "this source legitimately has zero features now" — it's almost
+    certainly a schema change or parsing bug, and upsert_and_prune can't
+    tell the two apart from an empty list alone (code-review 2026-08-11:
+    that ambiguity let a systemic parse failure silently prune an entire
+    table). Raising here, before upsert_and_prune ever sees an empty batch,
+    keeps a genuinely-empty source file (`features == []`) working exactly
+    as before.
+    """
+    features = _read_features(path)
     rows = []
-    for feature in _read_features(path):
-        props = feature["properties"]
+    for feature in features:
         try:
+            # "properties" moved inside the try: a feature missing it
+            # entirely is exactly the kind of schema-change this function
+            # is meant to survive (code-review 2026-08-12) — it used to
+            # raise a bare, unlogged KeyError here instead of being caught
+            # and counted like every other malformed feature below.
+            props = feature["properties"]
             geom = build_geometry(feature["geometry"], transformer=transformer)
             rows.append(row_fn(props, geom))
         except ValueError:
             raise
         except Exception as exc:
             logger.warning("Skipping feature in %s: %s", path.name, exc)
+    if features and not rows:
+        raise RuntimeError(
+            f"{path.name}: every one of {len(features)} feature(s) failed to parse — "
+            "refusing to treat this as genuine depletion. Investigate the warnings "
+            "above (likely a source schema change) before re-running."
+        )
     return rows
 
 

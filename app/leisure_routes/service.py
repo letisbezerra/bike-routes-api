@@ -1,5 +1,4 @@
-from math import ceil
-
+from geoalchemy2.types import WKBElement
 from sqlalchemy.orm import Session
 
 from app.leisure_routes.models import LeisureRoute
@@ -13,9 +12,15 @@ from app.shared.geojson import to_geojson_geometry
 from app.shared.schemas import PaginationMeta
 
 
-def _to_feature(leisure_route: LeisureRoute) -> LeisureRouteFeature:
+def _to_feature(
+    leisure_route: LeisureRoute,
+    clipped_geometry: WKBElement | None = None,
+    is_clipped: bool = False,
+) -> LeisureRouteFeature:
+    geometry = clipped_geometry if clipped_geometry is not None else leisure_route.geometry
     return LeisureRouteFeature(
-        geometry=to_geojson_geometry(leisure_route.geometry),
+        geometry=to_geojson_geometry(geometry),
+        clipped=is_clipped,
         properties=LeisureRouteProperties.model_validate(leisure_route),
     )
 
@@ -28,10 +33,12 @@ def list_leisure_routes(
     bbox: tuple[float, float, float, float] | None = None,
 ) -> LeisureRouteFeatureCollection:
     rows, total = list_paginated(session, page=page, page_size=page_size, bbox=bbox)
-    total_pages = ceil(total / page_size)
     return LeisureRouteFeatureCollection(
-        features=[_to_feature(row) for row in rows],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
+        features=[
+            _to_feature(leisure_route, clipped_geometry, is_clipped)
+            for leisure_route, clipped_geometry, is_clipped in rows
+        ],
+        meta=PaginationMeta.build(page=page, page_size=page_size, total=total),
     )
 
 

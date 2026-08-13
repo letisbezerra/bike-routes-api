@@ -1,4 +1,5 @@
-from typing import Generic, Literal, TypeVar
+from math import ceil
+from typing import Generic, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -13,10 +14,24 @@ class PaginationMeta(BaseModel):
     total: int
     total_pages: int
 
+    @classmethod
+    def build(cls, *, page: int, page_size: int, total: int, **extra) -> Self:
+        """`total_pages` derived once here instead of hand-computed at every
+        call site — `**extra` lets subclasses (e.g. SupportPointsPaginationMeta's
+        `total_by_type`) pass their own additional fields through unchanged."""
+        return cls(
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=ceil(total / page_size),
+            **extra,
+        )
+
 
 class Feature(BaseModel, Generic[PropertiesT]):
     type: Literal["Feature"] = "Feature"
     geometry: dict
+    clipped: bool = False
     properties: PropertiesT
 
 

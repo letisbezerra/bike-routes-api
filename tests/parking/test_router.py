@@ -40,3 +40,16 @@ def test_get_parking_by_id_404_for_missing_id(api_headers):
     response = client.get("/v1/parking/10000000", headers=api_headers)
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+def test_list_parking_always_reports_clipped_false(api_headers):
+    """bike_parking is Point geometry — the shared Feature.clipped field
+    (docs/specs/06-geometry-clipping.md) never applies here, bbox or not."""
+    response = client.get(
+        "/v1/parking",
+        headers=api_headers,
+        params={"page_size": 5, "bbox": "-38.64,-3.89,-38.41,-3.68"},
+    )
+    body = response.json()
+    assert len(body["features"]) == 5
+    assert all(feature["clipped"] is False for feature in body["features"])

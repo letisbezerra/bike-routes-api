@@ -1,5 +1,3 @@
-from math import ceil
-
 from sqlalchemy.orm import Session
 
 from app.parking.models import BikeParking, ParkingType
@@ -31,10 +29,9 @@ def list_parking(
     rows, total = list_paginated(
         session, page=page, page_size=page_size, parking_type=parking_type, bbox=bbox
     )
-    total_pages = ceil(total / page_size)
     return BikeParkingFeatureCollection(
         features=[_to_feature(row) for row in rows],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages),
+        meta=PaginationMeta.build(page=page, page_size=page_size, total=total),
     )
 
 

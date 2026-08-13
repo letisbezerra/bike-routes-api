@@ -11,7 +11,11 @@ UNAUTHORIZED_RESPONSE = {
     "content": {
         "application/json": {
             "example": {
-                "error": {"code": CODE_BY_STATUS[401], "message": "Invalid or missing API key"}
+                "error": {
+                    "code": CODE_BY_STATUS[401],
+                    "message": "Invalid or missing API key",
+                    "hint": "Include an X-API-Key header with a valid key.",
+                }
             }
         }
     },
@@ -24,7 +28,7 @@ VALIDATION_ERROR_RESPONSE = {
             "example": {
                 "error": {
                     "code": CODE_BY_STATUS[422],
-                    "message": "page_size: Input should be less than or equal to 200",
+                    "message": "query.page_size: must be 200 or less",
                 }
             }
         }
@@ -38,11 +42,11 @@ RATE_LIMITED_RESPONSE = {
             "example": {
                 "error": {
                     "code": CODE_BY_STATUS[429],
-                    # Matches slowapi/limits' own message format ("<amount>
-                    # per <multiples> <granularity>") for a "<n>/minute"
-                    # limit — derived from settings, not a fixed "60", so it
-                    # can't drift if RATE_LIMIT_PER_MINUTE is ever changed.
-                    "message": f"{settings.rate_limit_per_minute} per 1 minute",
+                    # Derived from settings, not a fixed "60", so it can't
+                    # drift if RATE_LIMIT_PER_MINUTE is ever changed.
+                    "message": f"Rate limit exceeded ({settings.rate_limit_per_minute} "
+                    "requests per minute).",
+                    "hint": "Wait a moment before retrying.",
                 }
             }
         }
@@ -67,7 +71,11 @@ def detail_responses(not_found_message: str) -> dict:
             "content": {
                 "application/json": {
                     "example": {
-                        "error": {"code": CODE_BY_STATUS[404], "message": not_found_message}
+                        "error": {
+                            "code": CODE_BY_STATUS[404],
+                            "message": not_found_message,
+                            "hint": "Check that the id is correct.",
+                        }
                     }
                 }
             },

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BikesAPI — Mapa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- ?v= bumped by hand on every style.css/app.js edit — this is a plain
+     static site with no build step, so there's no automatic cache-buster
+     like /docs' CSS gets from its mtime. Without it, browsers cache these
+     two files indefinitely (this http server sends no Cache-Control
+     either), so a real code change can silently not show up until a hard
+     refresh — confirmed live 2026-08-12. Same reasoning will matter after
+     this ships to GitHub Pages, where there's no server config to add
+     cache headers at all — this is the one fix that works in both places. -->
+<link rel="stylesheet" href="style.css?v=2" />
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="2" y="2" width="44" height="44" rx="6" stroke="oklch(0.6 0.13 215)" stroke-width="1.5" />
+      <path d="M15,33 L15,15 L33,15" fill="none" stroke="oklch(0.7 0.1 215)" stroke-width="3.2" stroke-linecap="square" stroke-linejoin="miter" />
+      <circle cx="15" cy="33" r="3.6" fill="oklch(0.7 0.1 215)" />
+      <circle cx="33" cy="15" r="3.6" fill="none" stroke="oklch(0.7 0.1 215)" stroke-width="3.2" />
+    </svg>
+    <span class="logo-title">BikesAPI</span>
+  </div>
+  <div class="header-divider"></div>
+  <span class="header-subtitle">Mapa de infraestrutura cicloviária — Fortaleza</span>
+  <a class="header-doclink" href="https://bike-routes-api.onrender.com/docs" target="_blank" rel="noopener">
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="4" y="2" width="12" height="16" fill="none" stroke="currentColor" stroke-width="1.4" />
+      <line x1="7" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" />
+      <line x1="7" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" />
+      <line x1="7" y1="13" x2="11" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" />
+    </svg>
+    Documentação (Swagger)
+  </a>
+  <div class="header-spacer"></div>
+  <button id="search-button">Buscar nesta área</button>
+  <span id="status"></span>
+  <span id="stale-hint">Mapa mudou — clique Buscar para atualizar.</span>
+  <button id="theme-toggle" aria-label="Alternar tema claro/escuro">
+    <svg viewBox="0 0 20 20">
+      <path d="M13.5 2.5a7.5 7.5 0 1 0 4 13 8.5 8.5 0 0 1-4-13z" fill="currentColor" />
+    </svg>
+  </button>
+</header>
+<div class="layout">
+  <aside id="sidebar">
+    <div>
+      <div class="sidebar-section-title">Camadas</div>
+      <div id="layer-legend">
+        <label class="legend-row">
+          <span class="legend-swatch"><span class="legend-swatch-line" style="background: #3f7fb0;"></span></span>
+          <span class="legend-info">
+            <span class="legend-label">Rotas</span><br />
+            <span class="legend-count" data-count-for="routes">0</span>
+          </span>
+          <input type="checkbox" data-layer="routes" checked />
+        </label>
+        <label class="legend-row">
+          <span class="legend-swatch"><span class="legend-swatch-dot" style="background: #3f9b7a;"></span></span>
+          <span class="legend-info">
+            <span class="legend-label">Estações</span><br />
+            <span class="legend-count" data-count-for="station">0</span>
+          </span>
+          <input type="checkbox" data-layer="station" />
+        </label>
+        <label class="legend-row">
+          <span class="legend-swatch"><span class="legend-swatch-dot" style="background: #c78a2e;"></span></span>
+          <span class="legend-info">
+            <span class="legend-label">Estacionamento</span><br />
+            <span class="legend-count" data-count-for="parking">0</span>
+          </span>
+          <input type="checkbox" data-layer="parking" />
+        </label>
+        <label class="legend-row">
+          <span class="legend-swatch"><span class="legend-swatch-dot" style="background: #a458a0;"></span></span>
+          <span class="legend-info">
+            <span class="legend-label">Pontos de descanso</span><br />
+            <span class="legend-count" data-count-for="rest_point">0</span>
+          </span>
+          <input type="checkbox" data-layer="rest_point" />
+        </label>
+        <label class="legend-row">
+          <span class="legend-swatch"><span class="legend-swatch-dashed" style="border-top-color: #c05a3c;"></span></span>
+          <span class="legend-info">
+            <span class="legend-label">Rotas de lazer</span><br />
+            <span class="legend-count" data-count-for="leisure_routes">0</span>
+          </span>
+          <input type="checkbox" data-layer="leisure_routes" />
+        </label>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div>
+      <div class="sidebar-section-title">Tipologia — Rotas</div>
+      <div class="filter-scope-hint">Filtra apenas a camada Rotas.</div>
+      <div class="category-list" id="tipologia-filter">
+        <label>
+          <input type="checkbox" data-category="ciclofaixa" checked />
+          <span class="legend-swatch"><span class="legend-swatch-line" style="background: #096399;"></span></span>
+          Ciclofaixa
+        </label>
+        <label>
+          <input type="checkbox" data-category="ciclovia" checked />
+          <span class="legend-swatch"><span class="legend-swatch-line" style="background: #02385b;"></span></span>
+          Ciclovia
+        </label>
+        <label>
+          <input type="checkbox" data-category="ciclorrota" checked />
+          <span class="legend-swatch"><span class="legend-swatch-line" style="background: #4d99d3;"></span></span>
+          Ciclorrota
+        </label>
+        <label>
+          <input type="checkbox" data-category="passeio_compartilhado" checked />
+          <span class="legend-swatch"><span class="legend-swatch-line" style="background: #9ed1fb;"></span></span>
+          Passeio compartilhado
+        </label>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div>
+      <div class="sidebar-section-title">Bairro</div>
+      <div class="filter-scope-hint">Filtra as camadas Rotas e Estações.</div>
+      <input type="text" id="neighborhood-search" placeholder="Buscar bairro..." />
+    </div>
+  </aside>
+  <div id="map"></div>
+</div>
+<footer>
+  Fonte: AMC/Prefeitura de Fortaleza · Dados de mapa ©
+  <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+  contributors © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>
+</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>

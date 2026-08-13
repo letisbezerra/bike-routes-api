@@ -33,8 +33,9 @@ Free-tier hosting spins down after inactivity — the first request after a quie
 | Bike-share stations (Bicicletar) | `/v1/stations` | Point |
 | Rest points | `/v1/rest-points` | Point |
 | Leisure bike routes | `/v1/leisure-routes` | MultiLineString |
+| Parking + stations + rest points, combined | `/v1/support-points` | Point |
 
-Every resource supports pagination and a bounding-box filter (`bbox=min_lon,min_lat,max_lon,max_lat`); some support additional filters — see the interactive docs.
+Every resource supports pagination and a bounding-box filter (`bbox=min_lon,min_lat,max_lon,max_lat`); some support additional filters — see the interactive docs. `/v1/support-points` aggregates the three point-geometry resources into one paginated feed (each feature's `resource_type` says which) — for a client building a single map view without orchestrating three separate calls.
 
 ## Authentication
 
@@ -86,6 +87,16 @@ uv run python -m scripts.manage_keys issue --label "who this is for"
 uv run python -m scripts.manage_keys list
 uv run python -m scripts.manage_keys revoke --key-id <id>
 ```
+
+## Web viewer (local demo)
+
+`docs/viewer/` is a static, build-step-free Leaflet map — pan/zoom Fortaleza, fetch bike routes, parking, bike-share stations, rest points, and leisure routes straight from this API. Stronger visual demo than Swagger alone; not yet published to GitHub Pages. Run it locally against the local API from [Local setup](#local-setup):
+
+```bash
+cd docs/viewer && python -m http.server 8080
+```
+
+Open `http://127.0.0.1:8080`. `app.js`'s `API_BASE`/`API_KEY` constants point at the local API (`:8000`) by default — swap them to point at the deployed instance instead.
 
 ## Observability demo (local only)
 
