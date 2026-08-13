@@ -1,9 +1,11 @@
 // docs/specs/09-web-viewer.md Checkpoint 6 — these two constants are the
-// only things that change when publishing for real. During development
-// they point at a locally-run API (docker compose up -d + uv run uvicorn
-// app.main:app --port 8000) with a key from `manage_keys.py issue`.
-const API_BASE = "http://127.0.0.1:8000/v1";
-const API_KEY = "4xaMRIrY1ri5FgFqbD3CRE8CsT3OOM0BQK0P7NkntEA";
+// only things that change when publishing for real. Now pointed at
+// production with the same published, shared demo key from README's
+// "Try it live" (docs/ARCHITECTURE.md's "one published, shared demo
+// key") — rate limiting is per-IP, not per-key, so sharing it here
+// doesn't create a shared throttling bucket between visitors.
+const API_BASE = "https://bike-routes-api.onrender.com/v1";
+const API_KEY = "I8CKqK3n5BNcFBKxVLVZFl0wZ6YdSwoiogzOpZo71KE";
 
 // Initial view — tighter than docs/DATA_SOURCES.md's full data extent
 // ([-3.87,-38.63] to [-3.69,-38.42]), centered on the same point but at
