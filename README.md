@@ -12,7 +12,7 @@ Fortaleza's city hall publishes this data as raw GeoJSON files on its open-data 
 
 ## Try it live
 
-Deployed and public: **https://bike-routes-api.onrender.com** ([Swagger UI](https://bike-routes-api.onrender.com/docs)).
+Deployed and public: **https://bike-routes-api.onrender.com** ([Swagger UI](https://bike-routes-api.onrender.com/docs) · [Web viewer](https://letisbezerra.github.io/bike-routes-api/viewer/)).
 
 Shared demo key, for quick testing — paste it into Swagger's **Authorize** button, or:
 
@@ -23,6 +23,18 @@ curl -H "X-API-Key: I8CKqK3n5BNcFBKxVLVZFl0wZ6YdSwoiogzOpZo71KE" "https://bike-r
 This key is shared and rate-limited — not for production use. If it's been revoked (e.g. after abuse) or you need your own, open an issue (see [Authentication](#authentication)).
 
 Free-tier hosting spins down after inactivity — the first request after a quiet period can take up to a minute.
+
+## Web viewer
+
+Live: **https://letisbezerra.github.io/bike-routes-api/viewer/** — pan/zoom Fortaleza, fetch bike routes, parking, bike-share stations, rest points, and leisure routes straight from this API. Stronger visual demo than Swagger alone.
+
+Static, build-step-free Leaflet map (`docs/viewer/`), no framework. `app.js`'s `API_BASE`/`API_KEY` constants point at the deployed API by default. To run it locally instead (e.g. against a local dev API from [Local setup](#local-setup)):
+
+```bash
+cd docs/viewer && python -m http.server 8080
+```
+
+Open `http://127.0.0.1:8080` — swap `API_BASE`/`API_KEY` back to local values first.
 
 ## Data
 
@@ -87,16 +99,6 @@ uv run python -m scripts.manage_keys issue --label "who this is for"
 uv run python -m scripts.manage_keys list
 uv run python -m scripts.manage_keys revoke --key-id <id>
 ```
-
-## Web viewer (local demo)
-
-`docs/viewer/` is a static, build-step-free Leaflet map — pan/zoom Fortaleza, fetch bike routes, parking, bike-share stations, rest points, and leisure routes straight from this API. Stronger visual demo than Swagger alone; not yet published to GitHub Pages. Run it locally against the local API from [Local setup](#local-setup):
-
-```bash
-cd docs/viewer && python -m http.server 8080
-```
-
-Open `http://127.0.0.1:8080`. `app.js`'s `API_BASE`/`API_KEY` constants point at the local API (`:8000`) by default — swap them to point at the deployed instance instead.
 
 ## Observability demo (local only)
 

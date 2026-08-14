@@ -59,7 +59,8 @@ app = FastAPI(
         "(routes, parking, bike-share stations, rest points). Data source: "
         "AMC/Prefeitura de Fortaleza — see the README for attribution details. "
         "Every endpoint requires an `X-API-Key` header; contact the maintainer "
-        "for a key."
+        "for a key. See it on a map: [web viewer]"
+        "(https://letisbezerra.github.io/bike-routes-api/viewer/)."
     ),
     version="0.1.0",
     # Default /docs replaced below with a themed one (docs/specs/
