@@ -99,6 +99,22 @@ themeToggle.addEventListener("click", () => {
   applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
 });
 
+// Mobile drawer — sidebar overlays the map below style.css's 768px
+// breakpoint instead of sharing width with it. .sidebar-toggle-btn stays
+// display:none above that breakpoint, so this listener is simply never
+// triggered on desktop — no width check needed here.
+const sidebarToggle = document.getElementById("sidebar-toggle");
+const sidebar = document.getElementById("sidebar");
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+
+function setSidebarOpen(open) {
+  sidebar.classList.toggle("open", open);
+  sidebarBackdrop.classList.toggle("visible", open);
+}
+
+sidebarToggle.addEventListener("click", () => setSidebarOpen(!sidebar.classList.contains("open")));
+sidebarBackdrop.addEventListener("click", () => setSidebarOpen(false));
+
 // One layerGroup per resource type — cleared and repopulated on each
 // search, added/removed from the map by their checkbox (docs/specs/09,
 // decision 7). Each starts on/off the map matching its checkbox's default
@@ -114,6 +130,7 @@ const layerGroups = {
 };
 
 const searchButton = document.getElementById("search-button");
+const sidebarSearchButton = document.getElementById("sidebar-search-button");
 const statusEl = document.getElementById("status");
 const staleHintEl = document.getElementById("stale-hint");
 const neighborhoodInput = document.getElementById("neighborhood-search");
@@ -321,6 +338,7 @@ async function searchCurrentArea() {
   const bbox = boundsToBbox(bounds);
 
   searchButton.disabled = true;
+  sidebarSearchButton.disabled = true;
   setStatus("Buscando...");
 
   try {
@@ -367,11 +385,20 @@ async function searchCurrentArea() {
   } finally {
     if (generation === requestGeneration) {
       searchButton.disabled = false;
+      sidebarSearchButton.disabled = false;
     }
   }
 }
 
 searchButton.addEventListener("click", searchCurrentArea);
+// Closes the drawer first (not after the fetch resolves) so the map is
+// what's on screen while "Buscando..." plays out, same moment a desktop
+// user already sees it — the sidebar version exists specifically because
+// the header's button was hard to reach on a real phone (2026-08-19).
+sidebarSearchButton.addEventListener("click", () => {
+  setSidebarOpen(false);
+  searchCurrentArea();
+});
 map.on("moveend", updateStaleHint);
 
 document.querySelectorAll("#layer-legend input[type=checkbox]").forEach((checkbox) => {
