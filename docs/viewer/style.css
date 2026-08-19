@@ -143,7 +143,8 @@ header {
 }
 
 #search-button,
-#theme-toggle {
+#theme-toggle,
+.sidebar-toggle-btn {
   background: transparent;
   border: 1px solid var(--accent-header-border);
   color: var(--accent-header-text);
@@ -176,8 +177,25 @@ header {
   height: 16px;
 }
 
+/* Hidden on desktop — only relevant once the sidebar becomes a drawer
+   (mobile media query below). display: none here, not just an unused
+   button, so it can never take up header space or be tab-focused on a
+   layout where it does nothing. */
+.sidebar-toggle-btn {
+  display: none;
+  line-height: 1;
+  padding: 7px 10px;
+}
+
+.sidebar-toggle-btn svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
 #search-button:hover:not(:disabled),
-#theme-toggle:hover {
+#theme-toggle:hover,
+.sidebar-toggle-btn:hover {
   background: var(--accent-header-border);
   color: var(--bg-header);
 }
@@ -187,7 +205,8 @@ header {
 .header-subtitle,
 .header-doclink,
 #search-button,
-#theme-toggle {
+#theme-toggle,
+.sidebar-toggle-btn {
   flex-shrink: 0;
 }
 
@@ -226,6 +245,19 @@ header {
   flex: 1 1 auto;
   display: flex;
   min-height: 0;
+}
+
+/* Inert on desktop (display: none) — only positioned/shown by the mobile
+   media query below, alongside #sidebar.open. Declared here rather than
+   inside the media query so toggling .visible can never do anything
+   outside the breakpoint it's meant for, even if a resize leaves the
+   class on the element. */
+#sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 64px 0 0 0;
+  background: oklch(0 0 0 / 0.4);
+  z-index: 1500;
 }
 
 #sidebar {
@@ -366,6 +398,31 @@ header {
   color: var(--text-input);
 }
 
+/* Hidden on desktop — the header's #search-button is already an easy
+   target there. Only shown by the mobile media query below, where the
+   header's version sits inside a cramped 64px-tall dark bar (found hard
+   to tap by the developer on a real phone, 2026-08-19); this one gets a
+   full-width, thumb-height target inside the drawer instead. */
+.sidebar-search-btn {
+  display: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 13px;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent);
+  color: oklch(0.985 0.004 255);
+  cursor: pointer;
+}
+
+.sidebar-search-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 #map {
   flex: 1 1 auto;
   min-width: 0;
@@ -415,4 +472,58 @@ footer {
 
 footer a {
   color: var(--accent-header-text);
+}
+
+/* Mobile layout — below this width, the sidebar becomes a slide-in drawer
+   over the map instead of sharing the header's width with it. Confirmed
+   live on a 390px viewport (2026-08-19): the fixed 300px sidebar left
+   only ~50px for the map, and the header's fixed-width items (subtitle,
+   doclink, search, theme toggle) overflowed the screen instead of
+   wrapping. Header keeps only the logo, search, status, and theme toggle;
+   the sidebar opens via .sidebar-toggle-btn and closes via itself or the
+   backdrop (app.js). */
+@media (max-width: 768px) {
+  header {
+    padding: 0 14px;
+    gap: 12px;
+  }
+
+  .header-divider,
+  .header-subtitle,
+  .header-doclink,
+  .logo-title {
+    display: none;
+  }
+
+  .sidebar-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #sidebar {
+    position: fixed;
+    top: 64px;
+    bottom: 0;
+    left: 0;
+    width: 82vw;
+    max-width: 320px;
+    box-sizing: border-box;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 2px 0 16px oklch(0 0 0 / 0.3);
+    z-index: 1600;
+  }
+
+  #sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-search-btn {
+    display: block;
+  }
+
+  #sidebar-backdrop.visible {
+    display: block;
+  }
 }
